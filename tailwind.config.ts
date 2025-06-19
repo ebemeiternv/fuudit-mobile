@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,43 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Scandinavian-inspired colors
+				sage: {
+					50: '#f7f9f7',
+					100: '#e8ede8',
+					200: '#d1ddd1',
+					300: '#a8c3a8',
+					400: '#7aa17a',
+					500: '#5a825a',
+					600: '#486848',
+					700: '#3c553c',
+					800: '#334533',
+					900: '#2c3a2c'
+				},
+				cream: {
+					50: '#fefdf8',
+					100: '#fef9e7',
+					200: '#fdf2c7',
+					300: '#fce69c',
+					400: '#f9d56f',
+					500: '#f5c242',
+					600: '#e6a835',
+					700: '#c18c2c',
+					800: '#9c7129',
+					900: '#7f5d26'
+				},
+				nordic: {
+					50: '#f8f9fa',
+					100: '#f1f3f4',
+					200: '#e8eaed',
+					300: '#dadce0',
+					400: '#bdc1c6',
+					500: '#9aa0a6',
+					600: '#80868b',
+					700: '#5f6368',
+					800: '#3c4043',
+					900: '#202124'
 				}
 			},
 			borderRadius: {
@@ -84,11 +122,31 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0px)'
+					},
+					'50%': {
+						transform: 'translateY(-10px)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.6s ease-out',
+				'float': 'float 3s ease-in-out infinite'
 			}
 		}
 	},
