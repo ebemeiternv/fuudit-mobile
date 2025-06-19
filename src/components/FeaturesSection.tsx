@@ -1,23 +1,41 @@
 
-import { Search, Utensils, Heart } from "lucide-react";
+import { Search, ChefHat, Recycle, Calendar, ShoppingCart, Clock } from "lucide-react";
 
 const features = [
   {
     icon: Search,
     title: "Smart Ingredient Search",
-    description: "Tell us what's in your fridge, and we'll find perfect recipes that use exactly what you have.",
+    description: "Enter ingredients you have at home and get real-time recipe suggestions from our extensive database.",
     color: "sage"
   },
   {
-    icon: Utensils,
+    icon: ChefHat,
     title: "AI Chef Assistant",
-    description: "Craving something specific? Our AI suggests creative meals based on your preferences and dietary needs.",
+    description: "Get personalized recipes based on your ingredients, dietary goals, and cooking style preferences.",
     color: "cream"
   },
   {
-    icon: Heart,
-    title: "Leftover Magic",
-    description: "Transform yesterday's dinner into today's delight. Never waste food again with clever remix ideas.",
+    icon: Recycle,
+    title: "Leftover Remix",
+    description: "Transform yesterday's meals into today's inspiration with creative leftover recipe suggestions.",
+    color: "nordic"
+  },
+  {
+    icon: Calendar,
+    title: "Meal Planning",
+    description: "Plan your week with our smart calendar integration and never run out of meal ideas again.",
+    color: "sage"
+  },
+  {
+    icon: ShoppingCart,
+    title: "Smart Shopping Lists",
+    description: "Auto-generated shopping lists based on your meal plans and pantry inventory.",
+    color: "cream"
+  },
+  {
+    icon: Clock,
+    title: "Pantry Tracking",
+    description: "Track expiration dates and get alerts to use ingredients before they go bad.",
     color: "nordic"
   }
 ];
@@ -28,14 +46,14 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-nordic-800 mb-6">
-            Your kitchen, simplified
+            Everything you need for smarter cooking
           </h2>
           <p className="text-xl text-nordic-600 max-w-2xl mx-auto text-balance">
-            Three powerful features that transform how you cook, plan, and enjoy meals
+            From ingredient search to meal planning, Fuudit helps you cook smarter and waste less
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <div 
               key={index}
@@ -49,11 +67,11 @@ const FeaturesSection = () => {
                 <feature.icon className="h-8 w-8" />
               </div>
               
-              <h3 className="text-2xl font-semibold text-nordic-800 mb-4">
+              <h3 className="text-xl font-semibold text-nordic-800 mb-4">
                 {feature.title}
               </h3>
               
-              <p className="text-nordic-600 leading-relaxed">
+              <p className="text-nordic-600 leading-relaxed text-sm">
                 {feature.description}
               </p>
             </div>

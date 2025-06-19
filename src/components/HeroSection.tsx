@@ -1,32 +1,36 @@
 
 import { Button } from "@/components/ui/button";
-import { Utensils } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-cream-50 via-sage-50 to-nordic-50 overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sage-50/30 to-sage-100/50 overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-sage-200/30 rounded-full blur-xl animate-float"></div>
-        <div className="absolute bottom-32 right-16 w-24 h-24 bg-cream-200/40 rounded-full blur-lg animate-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-sage-300/20 rounded-full blur-md animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-sage-200/20 rounded-full blur-xl animate-float"></div>
+        <div className="absolute bottom-32 right-16 w-24 h-24 bg-sage-300/20 rounded-full blur-lg animate-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-sage-200/15 rounded-full blur-md animate-float" style={{ animationDelay: '2s' }}></div>
       </div>
 
       <div className="container mx-auto px-6 text-center relative z-10">
-        <div className="max-w-4xl mx-auto animate-fade-in">
-          {/* Logo/Brand */}
+        <div className="max-w-5xl mx-auto animate-fade-in">
+          {/* Logo/Brand with Tilda */}
           <div className="flex items-center justify-center mb-8">
-            <div className="bg-sage-500 p-3 rounded-2xl mr-3">
-              <Utensils className="h-8 w-8 text-white" />
+            <img 
+              src="/lovable-uploads/43e3a289-72ad-479c-bcac-b38053e385e7.png" 
+              alt="Tilda - Fuudit mascot" 
+              className="h-16 w-16 mr-4"
+            />
+            <div>
+              <h1 className="text-4xl font-bold text-nordic-800 mb-1">fuudit</h1>
+              <p className="text-sm text-sage-600 font-medium">Your playful and smart kitchen assistant</p>
             </div>
-            <h1 className="text-4xl font-bold text-sage-800">Fuudit</h1>
           </div>
 
           {/* Main headline */}
           <h2 className="text-5xl md:text-7xl font-bold text-nordic-800 mb-6 text-balance">
-            AI magic for your{" "}
+            Recipes From Your{" "}
             <span className="text-sage-600 relative">
-              kitchen
+              Kitchen
               <svg className="absolute -bottom-2 left-0 w-full h-3" viewBox="0 0 200 10" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0,7 Q50,2 100,7 T200,7" stroke="currentColor" strokeWidth="2" fill="none" className="text-sage-300" />
               </svg>
@@ -34,17 +38,18 @@ const HeroSection = () => {
           </h2>
 
           {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-nordic-600 mb-8 max-w-2xl mx-auto text-balance font-light">
-            Turn ingredients into inspiration. Reduce waste, eat better, and discover meals you'll love.
+          <p className="text-xl md:text-2xl text-nordic-600 mb-8 max-w-3xl mx-auto text-balance">
+            Turn your available ingredients into delicious meals with our AI-powered recipe generator. 
+            Plan smarter, waste less, eat better.
           </p>
 
           {/* CTA Button */}
           <div className="space-y-4">
             <Button 
               size="lg" 
-              className="bg-sage-500 hover:bg-sage-600 text-white px-8 py-6 text-lg font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="bg-sage-500 hover:bg-sage-600 text-white px-10 py-6 text-lg font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
-              Try Fuudit – AI magic for your kitchen
+              🌱 Generate with AI
             </Button>
             <p className="text-sm text-nordic-500 font-medium">Free to start • No credit card required</p>
           </div>
@@ -52,7 +57,7 @@ const HeroSection = () => {
           {/* Social proof hint */}
           <div className="mt-16 pt-8 border-t border-sage-200/50">
             <p className="text-sm text-nordic-500 font-medium">
-              Join thousands reducing food waste and eating smarter
+              Join thousands reducing food waste and planning smarter meals
             </p>
           </div>
         </div>
