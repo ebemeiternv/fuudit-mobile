@@ -36,7 +36,7 @@ const CTASection = () => {
               size="lg" 
               className="bg-white text-sage-700 hover:bg-sage-50 px-10 py-6 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
             >
-              🌱 Generate with AI - Free Forever
+              🏢 For Businesses - Request a Demo
             </Button>
             <p className="text-sm text-sage-200 font-medium">
               Free forever • Premium features available • Cancel anytime

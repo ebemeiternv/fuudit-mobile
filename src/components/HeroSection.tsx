@@ -13,16 +13,18 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-6 text-center relative z-10">
         <div className="max-w-5xl mx-auto animate-fade-in">
-          {/* Logo/Brand with Tilda */}
-          <div className="flex items-center justify-center mb-8">
-            <img 
-              src="/lovable-uploads/43e3a289-72ad-479c-bcac-b38053e385e7.png" 
-              alt="Tilda - Fuudit mascot" 
-              className="h-16 w-16 mr-4"
-            />
-            <div>
-              <h1 className="text-4xl font-bold text-nordic-800 mb-1">fuudit</h1>
-              <p className="text-sm text-sage-600 font-medium">Your playful and smart kitchen assistant</p>
+          {/* Logo/Brand */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-nordic-800 mb-1">fuudit</h1>
+            <p className="text-sm text-sage-600 font-medium mb-6">Your playful and smart kitchen assistant</p>
+            
+            {/* Tilda below the text, centrally aligned */}
+            <div className="flex justify-center">
+              <img 
+                src="/lovable-uploads/43e3a289-72ad-479c-bcac-b38053e385e7.png" 
+                alt="Tilda - Fuudit mascot" 
+                className="h-16 w-16"
+              />
             </div>
           </div>
 
@@ -39,8 +41,7 @@ const HeroSection = () => {
 
           {/* Subtitle */}
           <p className="text-xl md:text-2xl text-nordic-600 mb-8 max-w-3xl mx-auto text-balance">
-            Turn your available ingredients into delicious meals with our AI-powered recipe generator. 
-            Plan smarter, waste less, eat better.
+            From pantry to plate — no waste, just taste.
           </p>
 
           {/* CTA Button */}
@@ -49,7 +50,7 @@ const HeroSection = () => {
               size="lg" 
               className="bg-sage-500 hover:bg-sage-600 text-white px-10 py-6 text-lg font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
-              🌱 Generate with AI
+              🌱 Join waiting list
             </Button>
             <p className="text-sm text-nordic-500 font-medium">Free to start • No credit card required</p>
           </div>

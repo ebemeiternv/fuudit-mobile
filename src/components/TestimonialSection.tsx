@@ -31,11 +31,12 @@ const TestimonialSection = () => {
             <p className="text-nordic-600 font-medium mb-4">
               Loved by families across Scandinavia and beyond
             </p>
-            <div className="flex justify-center items-center space-x-8 opacity-60">
+            <div className="flex justify-center items-center space-x-6 opacity-60">
               <span className="text-sm text-nordic-500">🇸🇪 Sweden</span>
               <span className="text-sm text-nordic-500">🇳🇴 Norway</span>
               <span className="text-sm text-nordic-500">🇩🇰 Denmark</span>
               <span className="text-sm text-nordic-500">🇫🇮 Finland</span>
+              <span className="text-sm text-nordic-500">🇪🇪 Estonia</span>
             </div>
             
             {/* Tilda mascot */}
