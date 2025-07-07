@@ -1,7 +1,11 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import WaitingListModal from "@/components/WaitingListModal";
 
 const HeroSection = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sage-50/30 to-sage-100/50 overflow-hidden">
       {/* Background decorative elements */}
@@ -48,6 +52,7 @@ const HeroSection = () => {
           <div className="space-y-4">
             <Button 
               size="lg" 
+              onClick={() => setIsModalOpen(true)}
               className="bg-sage-500 hover:bg-sage-600 text-white px-10 py-6 text-lg font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               🌱 Join waiting list
@@ -63,6 +68,11 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+
+      <WaitingListModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </section>
   );
 };
