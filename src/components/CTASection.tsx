@@ -1,8 +1,12 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChefHat } from "lucide-react";
+import DemoRequestModal from "@/components/DemoRequestModal";
 
 const CTASection = () => {
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+
   return (
     <section className="py-24 bg-gradient-to-br from-sage-500 via-sage-600 to-sage-700 relative overflow-hidden">
       {/* Background pattern */}
@@ -33,7 +37,8 @@ const CTASection = () => {
 
           <div className="space-y-4">
             <Button 
-              size="lg" 
+              size="lg"
+              onClick={() => setIsDemoModalOpen(true)}
               className="bg-white text-sage-700 hover:bg-sage-50 px-10 py-6 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
             >
               🏢 For Businesses - Request a Demo
@@ -66,6 +71,11 @@ const CTASection = () => {
           </div>
         </div>
       </div>
+
+      <DemoRequestModal 
+        isOpen={isDemoModalOpen} 
+        onClose={() => setIsDemoModalOpen(false)} 
+      />
     </section>
   );
 };
