@@ -92,7 +92,6 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Your name"
-                className="border-sage-200 focus:border-sage-400 focus:ring-sage-400"
               />
             </div>
 
@@ -107,7 +106,6 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="your.email@example.com"
-                className="border-sage-200 focus:border-sage-400 focus:ring-sage-400"
               />
             </div>
 
@@ -121,7 +119,7 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
                 onChange={(e) => handleInputChange("message", e.target.value)}
                 placeholder="Tell us what excites you about smart cooking..."
                 rows={4}
-                className="border-sage-200 focus:border-sage-400 focus:ring-sage-400 resize-none"
+                className="resize-none"
               />
             </div>
 
