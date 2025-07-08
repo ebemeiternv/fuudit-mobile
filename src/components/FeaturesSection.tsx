@@ -52,12 +52,6 @@ const comingSoonFeatures = [
     title: "Bio-Aware Food Suggestions",
     description: "Fuudit adapts to your sleep, cycle, stress, and movement data (from wearables like RingConn, Oura, or Apple Watch) to suggest meals that support your body in real time.",
     color: "cream"
-  },
-  {
-    icon: Lightbulb,
-    title: "Coming Soon: Fuudit Is Evolving",
-    description: "We're cooking up something groundbreaking. Soon, Fuudit will become the world's most personalized food and wellbeing assistant — blending AI, biometrics, and your pantry into daily health magic. Join the waitlist to be first.",
-    color: "nordic"
   }
 ];
 
@@ -110,7 +104,7 @@ const FeaturesSection = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {comingSoonFeatures.map((feature, index) => (
               <div 
                 key={index}
@@ -138,6 +132,27 @@ const FeaturesSection = () => {
                 </p>
               </div>
             ))}
+          </div>
+
+          {/* Centered Evolution Text Block */}
+          <div className="mt-16 text-center max-w-3xl mx-auto">
+            <div className="flex justify-center mb-6">
+              <div className="w-12 h-px bg-gradient-to-r from-transparent via-sage-300 to-transparent"></div>
+              <span className="mx-4 text-2xl">✨</span>
+              <div className="w-12 h-px bg-gradient-to-r from-transparent via-sage-300 to-transparent"></div>
+            </div>
+            
+            <h3 className="text-2xl md:text-3xl font-bold text-nordic-800 mb-6">
+              Fuudit Is Evolving
+            </h3>
+            
+            <p className="text-lg text-nordic-600 leading-relaxed mb-6">
+              We're cooking up something groundbreaking. Soon, Fuudit will become the world's most personalized food and wellbeing assistant — blending AI, biometrics, and your pantry into daily health magic.
+            </p>
+            
+            <p className="text-lg text-nordic-600 leading-relaxed">
+              Join the waiting list to be among the first to experience it.
+            </p>
           </div>
         </div>
       </div>
