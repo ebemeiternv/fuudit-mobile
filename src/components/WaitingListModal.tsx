@@ -37,7 +37,7 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
     try {
       await emailjs.send(
         'service_073243j',
-        'template_6kfvi1j',
+        'template_6kfvi1y',
         {
           name: formData.name || 'Anonymous',
           email: formData.email,
