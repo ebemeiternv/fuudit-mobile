@@ -9,13 +9,6 @@ const CTASection = () => {
 
   return (
     <section className="py-24 bg-gradient-to-br from-sage-500 via-sage-600 to-sage-700 relative overflow-hidden">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-12 left-12 w-32 h-32 border border-white rounded-full"></div>
-        <div className="absolute bottom-16 right-16 w-24 h-24 border border-white rounded-full"></div>
-        <div className="absolute top-1/2 right-1/4 w-16 h-16 border border-white rounded-full"></div>
-      </div>
-
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center text-white">
           <div className="flex items-center justify-center mb-8">

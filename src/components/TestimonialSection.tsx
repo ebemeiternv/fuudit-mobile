@@ -5,16 +5,15 @@ const TestimonialSection = () => {
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-6 w-6 text-sage-500 fill-current" />
-            ))}
-          </div>
-          
+        <div className="max-w-6xl mx-auto text-center">
           <div className="grid md:grid-cols-2 gap-12 mb-8">
             {/* First testimonial */}
             <div className="text-center">
+              <div className="flex justify-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 text-sage-500 fill-current" />
+                ))}
+              </div>
               <blockquote className="text-xl md:text-2xl font-medium text-nordic-800 mb-6 text-balance leading-relaxed">
                 "Fuudit has completely transformed my kitchen routine. I used to waste so much food, but now I actually look forward to using up leftovers. The AI suggestions are surprisingly creative!"
               </blockquote>
@@ -32,6 +31,11 @@ const TestimonialSection = () => {
 
             {/* Second testimonial */}
             <div className="text-center">
+              <div className="flex justify-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 text-sage-500 fill-current" />
+                ))}
+              </div>
               <blockquote className="text-xl md:text-2xl font-medium text-nordic-800 mb-6 text-balance leading-relaxed">
                 "The meal planning feature saves me hours every week! I love how Fuudit suggests recipes based on what I already have at home. No more last-minute grocery runs."
               </blockquote>
