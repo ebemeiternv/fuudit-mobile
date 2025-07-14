@@ -12,17 +12,39 @@ const TestimonialSection = () => {
             ))}
           </div>
           
-          <blockquote className="text-2xl md:text-3xl font-medium text-nordic-800 mb-8 text-balance leading-relaxed">
-            "Fuudit has completely transformed my kitchen routine. I used to waste so much food, but now I actually look forward to using up leftovers. The AI suggestions are surprisingly creative and the meal planning saves me hours every week!"
-          </blockquote>
-          
-          <div className="flex items-center justify-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-sage-400 to-sage-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">MH</span>
+          <div className="grid md:grid-cols-2 gap-12 mb-8">
+            {/* First testimonial */}
+            <div className="text-center">
+              <blockquote className="text-xl md:text-2xl font-medium text-nordic-800 mb-6 text-balance leading-relaxed">
+                "Fuudit has completely transformed my kitchen routine. I used to waste so much food, but now I actually look forward to using up leftovers. The AI suggestions are surprisingly creative!"
+              </blockquote>
+              
+              <div className="flex items-center justify-center space-x-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-sage-400 to-sage-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">AV</span>
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-nordic-800">Andres V.</div>
+                  <div className="text-nordic-600">Busy parent, Stockholm</div>
+                </div>
+              </div>
             </div>
-            <div className="text-left">
-              <div className="font-semibold text-nordic-800">Maria Hansen</div>
-              <div className="text-nordic-600">Busy parent, Copenhagen</div>
+
+            {/* Second testimonial */}
+            <div className="text-center">
+              <blockquote className="text-xl md:text-2xl font-medium text-nordic-800 mb-6 text-balance leading-relaxed">
+                "The meal planning feature saves me hours every week! I love how Fuudit suggests recipes based on what I already have at home. No more last-minute grocery runs."
+              </blockquote>
+              
+              <div className="flex items-center justify-center space-x-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-cream-400 to-cream-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">M</span>
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-nordic-800">Madli</div>
+                  <div className="text-nordic-600">Food enthusiast, Estonia</div>
+                </div>
+              </div>
             </div>
           </div>
 
