@@ -1,5 +1,8 @@
 
+import { useState } from "react";
 import { Search, ChefHat, Recycle, Calendar, ShoppingCart, Clock, Dna, HeartPulse, Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import WaitingListModal from "@/components/WaitingListModal";
 
 const features = [
   {
@@ -56,6 +59,8 @@ const comingSoonFeatures = [
 ];
 
 const FeaturesSection = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-6">
@@ -150,12 +155,25 @@ const FeaturesSection = () => {
               We're cooking up something groundbreaking. Soon, Fuudit will become the world's most personalized food and wellbeing assistant — blending AI, biometrics, and your pantry into daily health magic.
             </p>
             
-            <p className="text-lg text-nordic-600 leading-relaxed">
+            <p className="text-lg text-nordic-600 leading-relaxed mb-8">
               Join the waiting list to be among the first to experience it.
             </p>
+            
+            <Button 
+              size="lg" 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-sage-500 hover:bg-sage-600 text-white px-8 py-4 text-lg font-medium rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            >
+              🌱 Join waiting list
+            </Button>
           </div>
         </div>
       </div>
+
+      <WaitingListModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </section>
   );
 };
