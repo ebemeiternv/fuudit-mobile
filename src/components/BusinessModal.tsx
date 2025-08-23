@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Building2, Users, TrendingUp, Shield, Zap, BarChart3 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface BusinessModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface BusinessModalProps {
 }
 
 const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
+  const { toast } = useToast();
   const businessFeatures = [
     {
       icon: <Building2 className="h-6 w-6 text-sage-600" />,
@@ -137,12 +139,27 @@ const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
             <div className="flex gap-4 mt-8 justify-center">
               <Button
                 variant="outline"
-                onClick={onClose}
+                onClick={() => {
+                  toast({
+                    title: "Thank you!",
+                    description: "Feel free to reach out anytime for questions about Fuudit for Business.",
+                  });
+                  onClose();
+                }}
                 className="border-sage-300 text-nordic-600 hover:bg-sage-50"
               >
                 Close
               </Button>
-              <Button className="bg-sage-500 hover:bg-sage-600 text-white px-8">
+              <Button 
+                onClick={() => {
+                  toast({
+                    title: "Demo Requested!",
+                    description: "Our enterprise team will contact you within 24 hours to schedule your personalized demo.",
+                  });
+                  onClose();
+                }}
+                className="bg-sage-500 hover:bg-sage-600 text-white px-8"
+              >
                 Schedule Demo
               </Button>
             </div>
@@ -154,7 +171,7 @@ const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
               Questions? Contact our enterprise team
             </p>
             <p className="text-sage-600 font-medium">
-              📧 business@fuudit.com • 📞 +1 (555) FUUDIT-BIZ
+              📧 hello@fuudit.com
             </p>
           </div>
         </div>
