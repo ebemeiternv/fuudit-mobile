@@ -2,12 +2,25 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import WaitingListModal from "@/components/WaitingListModal";
+import BusinessModal from "@/components/BusinessModal";
 
 const HeroSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sage-50/30 to-sage-100/50 overflow-hidden">
+      {/* For Businesses button - top right */}
+      <div className="absolute top-6 right-6 z-20">
+        <Button
+          variant="outline"
+          onClick={() => setIsBusinessModalOpen(true)}
+          className="border-sage-300 text-nordic-700 hover:bg-sage-50 font-medium"
+        >
+          For Businesses
+        </Button>
+      </div>
+
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-32 h-32 bg-sage-200/20 rounded-full blur-xl animate-float"></div>
@@ -72,6 +85,11 @@ const HeroSection = () => {
       <WaitingListModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+      />
+      
+      <BusinessModal 
+        isOpen={isBusinessModalOpen} 
+        onClose={() => setIsBusinessModalOpen(false)} 
       />
     </section>
   );
