@@ -17,36 +17,50 @@ interface BusinessModalProps {
 
 const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
   const { toast } = useToast();
-  const businessFeatures = [
+  const businessCategories = [
     {
-      icon: <Building2 className="h-6 w-6 text-sage-600" />,
-      title: "Enterprise Integration",
-      description: "Seamlessly integrate with existing procurement and inventory systems"
+      title: "Fuudit for Restaurants & Catering",
+      subtitle: "Cut food waste and boost margins with AI-powered menu & stock optimization",
+      features: [
+        "Real-time AI-powered inventory & waste tracking",
+        "Menu optimization based on available stock (reduce costs, increase sustainability)",
+        "Dynamic pricing suggestions (use soon-to-expire stock in daily specials)",
+        "Staff-facing AI assistant for recipe/portion adjustments"
+      ],
+      icon: <Building2 className="h-6 w-6 text-sage-600" />
     },
     {
-      icon: <Users className="h-6 w-6 text-sage-600" />,
-      title: "Multi-Location Management",
-      description: "Manage inventory and meal planning across multiple restaurant locations"
+      title: "Fuudit for Grocery Retail",
+      subtitle: "Engage customers with smart expiry alerts, recipe tie-ins, and sustainable stock flow",
+      features: [
+        "Smart stock rotation & expiry alerts (reduce in-store food waste)",
+        "AI-driven shopper engagement → recipe suggestions linked to items in their cart",
+        "Digital 'Use Me First' labels and consumer notifications for near-expiry items",
+        "Circular economy options (divert surplus stock into meal boxes or charity channels)"
+      ],
+      icon: <Users className="h-6 w-6 text-sage-600" />
     },
     {
-      icon: <TrendingUp className="h-6 w-6 text-sage-600" />,
-      title: "Cost Optimization",
-      description: "Reduce food waste by up to 40% with AI-powered inventory tracking"
+      title: "Fuudit for Corporate Wellbeing",
+      subtitle: "Bring smarter, healthier, waste-free food to your workplace",
+      features: [
+        "Pantry/kitchen integration in workplace cafeterias",
+        "Personalized meal suggestions for employees (aligned with nutrition & wellbeing)",
+        "AI-driven menu planning to balance budget, taste, and health",
+        "Sustainability reporting: carbon & food waste reduction metrics"
+      ],
+      icon: <TrendingUp className="h-6 w-6 text-sage-600" />
     },
     {
-      icon: <BarChart3 className="h-6 w-6 text-sage-600" />,
-      title: "Analytics Dashboard",
-      description: "Real-time insights on food usage, waste patterns, and cost savings"
-    },
-    {
-      icon: <Shield className="h-6 w-6 text-sage-600" />,
-      title: "Enterprise Security",
-      description: "SOC 2 compliant with advanced data protection and privacy controls"
-    },
-    {
-      icon: <Zap className="h-6 w-6 text-sage-600" />,
-      title: "Custom API Access",
-      description: "Build custom integrations with our comprehensive API suite"
+      title: "Fuudit for Smart Appliances & Tech Partners",
+      subtitle: "Turn every kitchen device into a food-waste-fighting assistant",
+      features: [
+        "IoT fridge/freezer integration (scan contents → recipe suggestions)",
+        "Partnerships with smart kitchen devices (Ovens, Thermomix, Instant Pot)",
+        "API integrations with Apple Health, Oura, RingConn, Samsung Health → link wellness + food planning",
+        "Retail tie-ins: scan receipt → Fuudit updates pantry automatically"
+      ],
+      icon: <Zap className="h-6 w-6 text-sage-600" />
     }
   ];
 
@@ -63,18 +77,26 @@ const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
         </DialogHeader>
 
         <div className="space-y-8 mt-6">
-          {/* Key Benefits */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {businessFeatures.map((feature, index) => (
-              <div key={index} className="p-6 rounded-lg border border-sage-200 bg-sage-50/30 hover:bg-sage-50/50 transition-colors">
-                <div className="flex items-start space-x-4">
+          {/* Business Categories */}
+          <div className="space-y-8">
+            {businessCategories.map((category, index) => (
+              <div key={index} className="p-6 rounded-lg border border-sage-200 bg-sage-50/30">
+                <div className="flex items-start space-x-4 mb-4">
                   <div className="flex-shrink-0 p-2 bg-white rounded-lg shadow-sm">
-                    {feature.icon}
+                    {category.icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-nordic-800 mb-2">{feature.title}</h3>
-                    <p className="text-sm text-nordic-600">{feature.description}</p>
+                    <h3 className="text-xl font-bold text-nordic-800 mb-2">{category.title}</h3>
+                    <p className="text-sm text-sage-600 font-medium mb-4">{category.subtitle}</p>
                   </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3 ml-14">
+                  {category.features.map((feature, featureIndex) => (
+                    <div key={featureIndex} className="flex items-start space-x-2">
+                      <div className="w-2 h-2 bg-sage-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <p className="text-sm text-nordic-600">{feature}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
