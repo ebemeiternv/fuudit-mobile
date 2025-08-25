@@ -131,41 +131,66 @@ const BusinessModal = ({ isOpen, onClose }: BusinessModalProps) => {
             </div>
           </div>
 
-          {/* CTA Section */}
-          <div className="bg-sage-50/50 rounded-xl p-8 text-center">
-            <h3 className="text-3xl font-bold text-nordic-800 mb-4">
-              ✨ Ready to cook smarter?
+          {/* Contact Form */}
+          <div className="bg-sage-50/50 rounded-xl p-8">
+            <h3 className="text-2xl font-bold text-nordic-800 mb-6 text-center">
+              Ready to Transform Your Kitchen Operations?
             </h3>
-            <p className="text-lg text-nordic-600 mb-8 max-w-3xl mx-auto">
-              Join thousands who've discovered the joy of stress-free meal planning with Fuudit and Tilda - Plan meals, track your pantry, and let AI help you cut food waste while saving time and money.
-            </p>
             
-            <div className="space-y-4">
-              <Button 
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="company" className="text-nordic-700 font-medium">Company Name</Label>
+                  <Input id="company" placeholder="Your Company" className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="contact-email" className="text-nordic-700 font-medium">Business Email</Label>
+                  <Input id="contact-email" type="email" placeholder="business@company.com" className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="locations" className="text-nordic-700 font-medium">Number of Locations</Label>
+                  <Input id="locations" placeholder="e.g., 5 restaurants" className="mt-1" />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="contact-name" className="text-nordic-700 font-medium">Your Name</Label>
+                  <Input id="contact-name" placeholder="Full Name" className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="timeline" className="text-nordic-700 font-medium">Implementation Timeline</Label>
+                  <Input id="timeline" placeholder="e.g., Q2 2024" className="mt-1" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-8 justify-center">
+              <Button
+                variant="outline"
                 onClick={() => {
                   toast({
-                    title: "Welcome to Fuudit!",
-                    description: "Starting your free journey to smarter cooking and less food waste.",
+                    title: "Thank you!",
+                    description: "Feel free to reach out anytime for questions about Fuudit for Business.",
                   });
                   onClose();
                 }}
-                className="bg-sage-500 hover:bg-sage-600 text-white px-8 py-3 text-lg"
+                className="border-sage-300 text-nordic-600 hover:bg-sage-50"
               >
-                🍲 Get Started Free
+                Close
               </Button>
-              
-              <p className="text-sm text-nordic-500">
-                👉 Running a restaurant or food business?{" "}
-                <Button
-                  variant="link"
-                  onClick={() => {
-                    // Keep modal open to show business content
-                  }}
-                  className="text-sage-600 hover:text-sage-700 p-0 h-auto font-medium underline"
-                >
-                  Explore Fuudit for Businesses →
-                </Button>
-              </p>
+              <Button 
+                onClick={() => {
+                  toast({
+                    title: "Demo Requested!",
+                    description: "Our enterprise team will contact you within 24 hours to schedule your personalized demo.",
+                  });
+                  onClose();
+                }}
+                className="bg-sage-500 hover:bg-sage-600 text-white px-8"
+              >
+                Schedule Demo
+              </Button>
             </div>
           </div>
 

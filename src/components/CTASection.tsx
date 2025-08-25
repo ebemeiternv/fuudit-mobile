@@ -2,10 +2,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChefHat } from "lucide-react";
-import DemoRequestModal from "@/components/DemoRequestModal";
+import WaitingListModal from "@/components/WaitingListModal";
+import BusinessModal from "@/components/BusinessModal";
+import { useToast } from "@/hooks/use-toast";
 
 const CTASection = () => {
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [isWaitingListModalOpen, setIsWaitingListModalOpen] = useState(false);
+  const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
+  const { toast } = useToast();
 
   return (
     <section className="py-24 bg-gradient-to-br from-sage-500 via-sage-600 to-sage-700 relative overflow-hidden">
@@ -21,23 +25,36 @@ const CTASection = () => {
           </div>
 
           <h2 className="text-4xl md:text-6xl font-bold mb-6 text-balance">
-            Ready to cook smarter?
+            ✨ Ready to cook smarter?
           </h2>
 
-          <p className="text-xl md:text-2xl mb-10 text-sage-100 max-w-2xl mx-auto text-balance font-light">
-            Join thousands who've discovered the joy of stress-free meal planning with Fuudit and Tilda
+          <p className="text-xl md:text-2xl mb-10 text-sage-100 max-w-3xl mx-auto text-balance font-light">
+            Join thousands who've discovered the joy of stress-free meal planning with Fuudit and Tilda - Plan meals, track your pantry, and let AI help you cut food waste while saving time and money.
           </p>
 
           <div className="space-y-4">
             <Button 
               size="lg"
-              onClick={() => setIsDemoModalOpen(true)}
+              onClick={() => {
+                toast({
+                  title: "Welcome to Fuudit!",
+                  description: "Starting your free journey to smarter cooking and less food waste.",
+                });
+                setIsWaitingListModalOpen(true);
+              }}
               className="bg-white text-sage-700 hover:bg-sage-50 px-10 py-6 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
             >
-              🏢 For Businesses - Request a Demo
+              🍲 Get Started Free
             </Button>
             <p className="text-sm text-sage-200 font-medium">
-              Free forever • Premium features available • Cancel anytime
+              👉 Running a restaurant or food business?{" "}
+              <Button
+                variant="link"
+                onClick={() => setIsBusinessModalOpen(true)}
+                className="text-white hover:text-sage-100 p-0 h-auto font-medium underline"
+              >
+                Explore Fuudit for Businesses →
+              </Button>
             </p>
           </div>
 
@@ -65,9 +82,13 @@ const CTASection = () => {
         </div>
       </div>
 
-      <DemoRequestModal 
-        isOpen={isDemoModalOpen} 
-        onClose={() => setIsDemoModalOpen(false)} 
+      <WaitingListModal 
+        isOpen={isWaitingListModalOpen} 
+        onClose={() => setIsWaitingListModalOpen(false)} 
+      />
+      <BusinessModal 
+        isOpen={isBusinessModalOpen} 
+        onClose={() => setIsBusinessModalOpen(false)} 
       />
     </section>
   );
