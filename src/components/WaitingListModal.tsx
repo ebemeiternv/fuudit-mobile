@@ -80,7 +80,8 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
     "I need cooking inspiration",
     "I want to make grocery shopping more efficient",
     "I want to better track what items I have at home",
-    "I want to better track shelf-life of the items I have"
+    "I want to better track shelf-life of the items I have",
+    "Take a picture of what's in my kitchen → get recipes I can cook"
   ];
 
   return (
