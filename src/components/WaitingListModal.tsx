@@ -20,6 +20,7 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    country: "",
     interests: [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,15 +42,15 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
         {
           name: formData.name || 'Anonymous',
           email: formData.email,
-          message: formData.interests.length > 0 
+          message: `${formData.country ? `Country: ${formData.country}\n` : ''}${formData.interests.length > 0 
             ? `I'm interested in: ${formData.interests.join(', ')}` 
-            : 'Looking forward to trying Fuudit!',
+            : 'Looking forward to trying Fuudit!'}`,
         },
         'UdQc0_sEnTxrudWHD'
       );
 
       setShowSuccess(true);
-      setFormData({ name: "", email: "", interests: [] });
+      setFormData({ name: "", email: "", country: "", interests: [] });
       
       setTimeout(() => {
         setShowSuccess(false);
@@ -126,6 +127,19 @@ const WaitingListModal = ({ isOpen, onClose }: WaitingListModalProps) => {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="your.email@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country" className="text-nordic-700 font-medium">
+                Country (optional)
+              </Label>
+              <Input
+                id="country"
+                type="text"
+                value={formData.country}
+                onChange={(e) => handleInputChange("country", e.target.value)}
+                placeholder="Your country"
               />
             </div>
 
