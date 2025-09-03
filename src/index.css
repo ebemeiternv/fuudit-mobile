@@ -9,44 +9,80 @@
 
 @layer base {
   :root {
-    --background: 120 14% 98%;
-    --foreground: 120 20% 10%;
+    --background: 45 100% 98%;
+    --foreground: 330 15% 25%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 120 20% 10%;
+    --card: 45 100% 98%;
+    --card-foreground: 330 15% 25%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 120 20% 10%;
+    --popover: 45 100% 98%;
+    --popover-foreground: 330 15% 25%;
 
-    --primary: 120 20% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 320 25% 65%;
+    --primary-foreground: 45 100% 98%;
 
-    --secondary: 120 14% 97%;
-    --secondary-foreground: 120 20% 10%;
+    --secondary: 290 30% 85%;
+    --secondary-foreground: 330 15% 25%;
 
-    --muted: 120 14% 97%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 290 20% 90%;
+    --muted-foreground: 330 10% 45%;
 
-    --accent: 120 50% 96%;
-    --accent-foreground: 120 20% 10%;
+    --accent: 15 60% 88%;
+    --accent-foreground: 330 15% 25%;
 
     --destructive: 0 68% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 45 100% 98%;
 
-    --border: 120 14% 90%;
-    --input: 120 14% 90%;
-    --ring: 120 20% 42%;
+    --border: 290 15% 85%;
+    --input: 290 15% 85%;
+    --ring: 320 25% 65%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Soft Pink Theme */
+    --soft-pink-50: 15 100% 97%;
+    --soft-pink-100: 15 90% 94%;
+    --soft-pink-200: 15 80% 88%;
+    --soft-pink-300: 15 70% 82%;
+    --soft-pink-400: 15 60% 76%;
+    --soft-pink-500: 15 50% 70%;
+    --soft-pink-600: 15 45% 64%;
+    --soft-pink-700: 15 40% 58%;
+    --soft-pink-800: 15 35% 52%;
+    --soft-pink-900: 15 30% 46%;
+    
+    /* Cream Theme */
+    --cream-50: 45 100% 98%;
+    --cream-100: 45 90% 95%;
+    --cream-200: 45 80% 90%;
+    --cream-300: 45 70% 85%;
+    --cream-400: 45 60% 80%;
+    --cream-500: 45 50% 75%;
+    --cream-600: 45 40% 70%;
+    --cream-700: 45 30% 65%;
+    --cream-800: 45 25% 60%;
+    --cream-900: 45 20% 55%;
+    
+    /* Lavender Theme */
+    --lavender-50: 290 60% 96%;
+    --lavender-100: 290 50% 92%;
+    --lavender-200: 290 40% 85%;
+    --lavender-300: 290 35% 78%;
+    --lavender-400: 290 30% 71%;
+    --lavender-500: 290 25% 64%;
+    --lavender-600: 290 22% 57%;
+    --lavender-700: 290 20% 50%;
+    --lavender-800: 290 18% 43%;
+    --lavender-900: 290 16% 36%;
+
+    --sidebar-background: 45 100% 98%;
+    --sidebar-foreground: 330 15% 25%;
+    --sidebar-primary: 320 25% 65%;
+    --sidebar-primary-foreground: 45 100% 98%;
+    --sidebar-accent: 290 20% 90%;
+    --sidebar-accent-foreground: 330 15% 25%;
+    --sidebar-border: 290 15% 85%;
+    --sidebar-ring: 320 25% 65%;
   }
 
   .dark {

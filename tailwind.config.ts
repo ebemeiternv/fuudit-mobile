@@ -63,42 +63,42 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Scandinavian-inspired colors
-				sage: {
-					50: 'hsl(120 14% 97%)',
-					100: 'hsl(120 14% 92%)',
-					200: 'hsl(120 14% 83%)',
-					300: 'hsl(120 14% 71%)',
-					400: 'hsl(120 14% 56%)',
-					500: 'hsl(120 20% 42%)',
-					600: 'hsl(120 20% 32%)',
-					700: 'hsl(120 20% 27%)',
-					800: 'hsl(120 20% 23%)',
-					900: 'hsl(120 20% 19%)'
+				// Soft pastels inspired by cover image
+				'soft-pink': {
+					50: 'hsl(var(--soft-pink-50))',
+					100: 'hsl(var(--soft-pink-100))',
+					200: 'hsl(var(--soft-pink-200))',
+					300: 'hsl(var(--soft-pink-300))',
+					400: 'hsl(var(--soft-pink-400))',
+					500: 'hsl(var(--soft-pink-500))',
+					600: 'hsl(var(--soft-pink-600))',
+					700: 'hsl(var(--soft-pink-700))',
+					800: 'hsl(var(--soft-pink-800))',
+					900: 'hsl(var(--soft-pink-900))'
 				},
 				cream: {
-					50: 'hsl(45 71% 97%)',
-					100: 'hsl(45 71% 92%)',
-					200: 'hsl(45 71% 86%)',
-					300: 'hsl(45 71% 78%)',
-					400: 'hsl(45 71% 69%)',
-					500: 'hsl(45 71% 60%)',
-					600: 'hsl(45 71% 52%)',
-					700: 'hsl(45 71% 45%)',
-					800: 'hsl(45 71% 38%)',
-					900: 'hsl(45 71% 32%)'
+					50: 'hsl(var(--cream-50))',
+					100: 'hsl(var(--cream-100))',
+					200: 'hsl(var(--cream-200))',
+					300: 'hsl(var(--cream-300))',
+					400: 'hsl(var(--cream-400))',
+					500: 'hsl(var(--cream-500))',
+					600: 'hsl(var(--cream-600))',
+					700: 'hsl(var(--cream-700))',
+					800: 'hsl(var(--cream-800))',
+					900: 'hsl(var(--cream-900))'
 				},
-				nordic: {
-					50: 'hsl(210 20% 98%)',
-					100: 'hsl(210 20% 95%)',
-					200: 'hsl(210 20% 90%)',
-					300: 'hsl(210 20% 85%)',
-					400: 'hsl(210 20% 75%)',
-					500: 'hsl(210 20% 65%)',
-					600: 'hsl(210 20% 55%)',
-					700: 'hsl(210 20% 40%)',
-					800: 'hsl(210 20% 25%)',
-					900: 'hsl(210 20% 13%)'
+				lavender: {
+					50: 'hsl(var(--lavender-50))',
+					100: 'hsl(var(--lavender-100))',
+					200: 'hsl(var(--lavender-200))',
+					300: 'hsl(var(--lavender-300))',
+					400: 'hsl(var(--lavender-400))',
+					500: 'hsl(var(--lavender-500))',
+					600: 'hsl(var(--lavender-600))',
+					700: 'hsl(var(--lavender-700))',
+					800: 'hsl(var(--lavender-800))',
+					900: 'hsl(var(--lavender-900))'
 				}
 			},
 			borderRadius: {
