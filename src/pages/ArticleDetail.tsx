@@ -9,6 +9,8 @@ const ArticleDetail = () => {
   const articles = {
     "future-of-food-waste-smart-tech": {
       title: "The Future of Food Waste: How Smart Tech is Redefining How We Eat",
+      author: "Ebe Meitern-Vare",
+      date: "November 5, 2025",
       image: foodWasteImage,
       content: `Nearly one-third of all food produced globally never gets eaten. Behind that statistic lies more than waste — it represents lost energy, water, time, and opportunity. Food waste is not only a household inconvenience; it's a social, environmental, and economic challenge that affects every corner of the planet.
 
@@ -60,9 +62,9 @@ Fuudit was created to make everyday conscious eating simple, sustainable, and fu
 
 Together, we can transform the way we eat, cook, and care for the planet — one meal at a time.
 
-**Explore Fuudit at [www.fuudit.com](https://www.fuudit.com)**
+Explore Fuudit at [www.fuudit.com](https://www.fuudit.com)
 
-**Sign up for early access at [signup.fuudit.com](https://signup.fuudit.com)**`
+Sign up for early access at [signup.fuudit.com](https://signup.fuudit.com)`
     }
   };
 
@@ -90,6 +92,12 @@ Together, we can transform the way we eat, cook, and care for the planet — one
 
       <main className="py-12 px-4">
         <article className="container mx-auto max-w-4xl">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
+            <span className="font-medium">{article.author}</span>
+            <span>•</span>
+            <time dateTime="2025-11-05">{article.date}</time>
+          </div>
+
           <div className="aspect-video overflow-hidden rounded-lg mb-8">
             <img 
               src={article.image} 
