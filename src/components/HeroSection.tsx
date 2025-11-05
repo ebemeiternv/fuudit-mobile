@@ -18,7 +18,7 @@ const HeroSection = () => {
           className="bg-sage-500 hover:bg-sage-600 text-white font-medium"
         >
           <a href="https://www.fuudit.com" target="_blank" rel="noopener noreferrer">
-            Try MVP
+            Discover Fuudit
           </a>
         </Button>
       </div>
