@@ -17,7 +17,7 @@ const HeroSection = () => {
           asChild
           className="bg-sage-500 hover:bg-sage-600 text-white font-medium"
         >
-          <a href="https://signup.fuudit.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.fuudit.com" target="_blank" rel="noopener noreferrer">
             Try MVP
           </a>
         </Button>
