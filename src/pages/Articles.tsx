@@ -10,42 +10,6 @@ const Articles = () => {
       description: "Discover how AI-driven technology is transforming our relationship with food, making sustainable living simple and accessible for everyone.",
       image: foodWasteImage,
       slug: "future-of-food-waste-smart-tech"
-    },
-    {
-      title: "10 Easy Meal Prep Ideas for Busy Weekdays",
-      description: "Save time and reduce food waste with these simple meal prep strategies that work for any schedule.",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop",
-      slug: "meal-prep-ideas"
-    },
-    {
-      title: "How to Reduce Food Waste at Home",
-      description: "Practical tips and tricks to minimize food waste in your kitchen while saving money on groceries.",
-      image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&h=600&fit=crop",
-      slug: "reduce-food-waste"
-    },
-    {
-      title: "Understanding Food Expiration Dates",
-      description: "Learn the difference between 'best before' and 'use by' dates to make informed decisions about food safety.",
-      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop",
-      slug: "expiration-dates-guide"
-    },
-    {
-      title: "Budget-Friendly Grocery Shopping Tips",
-      description: "Smart strategies to save money while still buying nutritious, quality ingredients for your family.",
-      image: "https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?w=800&h=600&fit=crop",
-      slug: "budget-grocery-shopping"
-    },
-    {
-      title: "Seasonal Eating: A Guide to Fresh Produce",
-      description: "Discover which fruits and vegetables are in season and how to incorporate them into your meals.",
-      image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&h=600&fit=crop",
-      slug: "seasonal-eating-guide"
-    },
-    {
-      title: "Quick Healthy Snacks for the Whole Family",
-      description: "Nutritious and delicious snack ideas that everyone will love, ready in minutes.",
-      image: "https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=800&h=600&fit=crop",
-      slug: "healthy-snacks"
     }
   ];
 

@@ -10,24 +10,6 @@ const ArticlesPreviewSection = () => {
       description: "Discover how AI-driven technology is transforming our relationship with food, making sustainable living simple and accessible for everyone.",
       image: foodWasteImage,
       slug: "future-of-food-waste-smart-tech"
-    },
-    {
-      title: "10 Easy Meal Prep Ideas for Busy Weekdays",
-      description: "Save time and reduce food waste with these simple meal prep strategies that work for any schedule.",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop",
-      slug: "meal-prep-ideas"
-    },
-    {
-      title: "How to Reduce Food Waste at Home",
-      description: "Practical tips and tricks to minimize food waste in your kitchen while saving money on groceries.",
-      image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&h=600&fit=crop",
-      slug: "reduce-food-waste"
-    },
-    {
-      title: "Understanding Food Expiration Dates",
-      description: "Learn the difference between 'best before' and 'use by' dates to make informed decisions about food safety.",
-      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop",
-      slug: "expiration-dates-guide"
     }
   ];
 
