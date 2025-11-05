@@ -10,8 +10,15 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sage-50/30 to-sage-100/50 overflow-hidden">
-      {/* For Businesses button - top right */}
-      <div className="absolute top-6 right-6 z-20">
+      {/* Navigation buttons - top right */}
+      <div className="absolute top-6 right-6 z-20 flex gap-3">
+        <Button
+          variant="outline"
+          asChild
+          className="border-sage-300 text-nordic-700 hover:bg-sage-50 font-medium"
+        >
+          <a href="/articles">Articles</a>
+        </Button>
         <Button
           variant="outline"
           onClick={() => setIsBusinessModalOpen(true)}
