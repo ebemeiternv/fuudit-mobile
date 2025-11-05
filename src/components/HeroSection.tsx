@@ -10,6 +10,19 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sage-50/30 to-sage-100/50 overflow-hidden">
+      {/* MVP Link - top left */}
+      <div className="absolute top-6 left-6 z-20">
+        <Button
+          variant="default"
+          asChild
+          className="bg-sage-500 hover:bg-sage-600 text-white font-medium"
+        >
+          <a href="https://signup.fuudit.com" target="_blank" rel="noopener noreferrer">
+            Try MVP
+          </a>
+        </Button>
+      </div>
+
       {/* Navigation buttons - top right */}
       <div className="absolute top-6 right-6 z-20 flex gap-3">
         <Button
