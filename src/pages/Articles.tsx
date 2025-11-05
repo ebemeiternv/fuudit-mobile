@@ -1,9 +1,16 @@
 import ArticleCard from "@/components/ArticleCard";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
+import foodWasteImage from "@/assets/food-waste-smart-tech.jpg";
 
 const Articles = () => {
   const articles = [
+    {
+      title: "The Future of Food Waste: How Smart Tech is Redefining How We Eat",
+      description: "Discover how AI-driven technology is transforming our relationship with food, making sustainable living simple and accessible for everyone.",
+      image: foodWasteImage,
+      slug: "future-of-food-waste-smart-tech"
+    },
     {
       title: "10 Easy Meal Prep Ideas for Busy Weekdays",
       description: "Save time and reduce food waste with these simple meal prep strategies that work for any schedule.",
