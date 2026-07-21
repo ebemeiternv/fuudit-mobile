@@ -39,6 +39,12 @@ const HeroSection = () => {
         >
           For Businesses
         </Button>
+        <Button
+          asChild
+          className="bg-sage-600 hover:bg-sage-700 text-white font-medium"
+        >
+          <a href="/auth">Sign in</a>
+        </Button>
       </div>
 
       {/* Background decorative elements */}
