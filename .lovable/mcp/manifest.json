@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "fuudit-mcp",
+      "version": "0.1.0",
+      "title": "Fuudit"
+    },
+    "tools": [
+      {
+        "name": "get_app_info",
+        "title": "Get app info",
+        "description": "Return a high-level description of Fuudit — what it is, who it's for, and where to try it.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_features",
+        "title": "List Fuudit features",
+        "description": "List Fuudit's current consumer features and upcoming (coming-soon) features.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_business_offerings",
+        "title": "List Fuudit for Businesses offerings",
+        "description": "List Fuudit's B2B segments (restaurants, retail, corporate wellbeing, smart tech, hospitality chains) with their pitches and feature highlights.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_articles",
+        "title": "List Fuudit articles",
+        "description": "List all published Fuudit articles with title, author, publish date, excerpt, and slug.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_article",
+        "title": "Get Fuudit article",
+        "description": "Fetch the full text of a Fuudit article by its slug. Use `list_articles` first to discover valid slugs.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Article slug, e.g. 'future-of-food-waste-smart-tech'."
+            }
+          },
+          "required": [
+            "slug"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
