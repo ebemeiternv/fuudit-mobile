@@ -2,10 +2,10 @@ import ScreenHeader from "@/components/app/ScreenHeader";
 import { Sparkles, Clock, Flame, Utensils, Refrigerator, Recycle } from "lucide-react";
 
 const prompts = [
-  { title: "Cook with what I have", subtitle: "Uses 8 pantry items", Icon: Refrigerator, tint: "violet" },
-  { title: "Remix last night's dinner", subtitle: "Leftover chicken & rice", Icon: Recycle, tint: "sky" },
-  { title: "Quick 15-min dinner", subtitle: "Weeknight friendly", Icon: Clock, tint: "warm" },
-  { title: "High-protein lunch", subtitle: "Aligned to your goals", Icon: Flame, tint: "berry" },
+  { title: "Cook with what I have", subtitle: "Uses 8 pantry items", Icon: Refrigerator, tint: "bg-[hsl(var(--app-accent-violet)/0.12)] text-[hsl(var(--app-accent-violet))]" },
+  { title: "Remix last night's dinner", subtitle: "Leftover chicken & rice", Icon: Recycle, tint: "bg-[hsl(var(--app-accent-sky)/0.12)] text-[hsl(var(--app-accent-sky))]" },
+  { title: "Quick 15-min dinner", subtitle: "Weeknight friendly", Icon: Clock, tint: "bg-[hsl(var(--app-accent-warm)/0.12)] text-[hsl(var(--app-accent-warm))]" },
+  { title: "High-protein lunch", subtitle: "Aligned to your goals", Icon: Flame, tint: "bg-[hsl(var(--app-accent-berry)/0.12)] text-[hsl(var(--app-accent-berry))]" },
 ];
 
 const suggestion = {

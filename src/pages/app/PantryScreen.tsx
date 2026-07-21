@@ -3,10 +3,10 @@ import { Plus, Search, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const categories = [
-  { name: "Fresh", count: 12, color: "app-primary" },
-  { name: "Fridge", count: 8, color: "app-accent-sky" },
-  { name: "Freezer", count: 5, color: "app-accent-violet" },
-  { name: "Dry goods", count: 21, color: "app-accent-warm" },
+  { name: "Fresh", count: 12, tint: "bg-[hsl(var(--app-primary)/0.08)]" },
+  { name: "Fridge", count: 8, tint: "bg-[hsl(var(--app-accent-sky)/0.08)]" },
+  { name: "Freezer", count: 5, tint: "bg-[hsl(var(--app-accent-violet)/0.08)]" },
+  { name: "Dry goods", count: 21, tint: "bg-[hsl(var(--app-accent-warm)/0.08)]" },
 ];
 
 const items = [
@@ -40,7 +40,7 @@ const PantryScreen = () => (
 
       <div className="grid grid-cols-4 gap-2">
         {categories.map((c) => (
-          <div key={c.name} className={`app-card-flat p-3 text-center bg-[hsl(var(--${c.color})_/_0.06)]`}>
+          <div key={c.name} className={`app-card-flat p-3 text-center ${c.tint}`}>
             <p className="text-xl font-bold text-[hsl(var(--app-foreground))]">{c.count}</p>
             <p className="text-[11px] font-medium text-[hsl(var(--app-muted))]">{c.name}</p>
           </div>
