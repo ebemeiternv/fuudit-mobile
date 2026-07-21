@@ -1,14 +1,12 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
+    /* Marketing (landing) tokens — sage-based, unchanged */
     --background: 120 14% 98%;
     --foreground: 120 20% 10%;
 
@@ -37,7 +35,37 @@
     --input: 120 14% 90%;
     --ring: 120 20% 42%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+
+    /* App (authenticated) tokens — premium iOS/Scandi */
+    --app-bg: 40 30% 98%;
+    --app-surface: 0 0% 100%;
+    --app-surface-elevated: 0 0% 100%;
+    --app-foreground: 150 20% 8%;
+    --app-muted: 150 8% 46%;
+    --app-subtle: 150 15% 94%;
+    --app-border: 150 10% 92%;
+
+    --app-primary: 150 42% 34%;
+    --app-primary-soft: 150 42% 94%;
+    --app-primary-foreground: 0 0% 100%;
+
+    --app-accent-warm: 24 90% 62%;      /* pantry / warmth */
+    --app-accent-warm-soft: 24 90% 96%;
+    --app-accent-berry: 340 68% 60%;    /* grocery / actions */
+    --app-accent-berry-soft: 340 68% 96%;
+    --app-accent-sky: 210 80% 60%;      /* meal plan */
+    --app-accent-sky-soft: 210 80% 96%;
+    --app-accent-violet: 268 60% 62%;   /* AI chef */
+    --app-accent-violet-soft: 268 60% 96%;
+
+    --app-success: 148 55% 44%;
+    --app-warning: 38 92% 55%;
+    --app-danger: 358 72% 58%;
+
+    --app-shadow-sm: 0 1px 2px hsl(150 20% 10% / 0.04), 0 1px 3px hsl(150 20% 10% / 0.06);
+    --app-shadow-md: 0 4px 12px hsl(150 20% 10% / 0.06), 0 2px 4px hsl(150 20% 10% / 0.04);
+    --app-shadow-lg: 0 20px 40px -12px hsl(150 20% 10% / 0.12), 0 8px 16px -8px hsl(150 20% 10% / 0.08);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -52,39 +80,23 @@
   .dark {
     --background: 120 20% 10%;
     --foreground: 120 14% 98%;
-
     --card: 120 20% 10%;
     --card-foreground: 120 14% 98%;
-
     --popover: 120 20% 10%;
     --popover-foreground: 120 14% 98%;
-
     --primary: 120 20% 65%;
     --primary-foreground: 120 20% 10%;
-
     --secondary: 120 20% 15%;
     --secondary-foreground: 120 14% 98%;
-
     --muted: 120 20% 15%;
     --muted-foreground: 0 0% 65%;
-
     --accent: 120 20% 15%;
     --accent-foreground: 120 14% 98%;
-
     --destructive: 0 68% 50%;
     --destructive-foreground: 120 14% 98%;
-
     --border: 120 20% 15%;
     --input: 120 20% 15%;
     --ring: 120 20% 65%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -97,19 +109,45 @@
     @apply bg-background text-foreground font-normal;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-feature-settings: 'cv11', 'ss01';
-    font-variation-settings: 'opsz' 32;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.15;
     letter-spacing: -0.025em;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+
+  /* App-scoped utilities (used only inside /app routes) */
+  .app-shell {
+    background: hsl(var(--app-bg));
+    color: hsl(var(--app-foreground));
+    min-height: 100dvh;
   }
+  .app-card {
+    background: hsl(var(--app-surface));
+    border-radius: 1.25rem;
+    box-shadow: var(--app-shadow-md);
+    border: 1px solid hsl(var(--app-border) / 0.5);
+  }
+  .app-card-flat {
+    background: hsl(var(--app-surface));
+    border-radius: 1.25rem;
+    border: 1px solid hsl(var(--app-border));
+  }
+  .app-glass {
+    background: hsl(var(--app-surface) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .safe-top { padding-top: max(env(safe-area-inset-top), 0.5rem); }
+  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0.75rem); }
+
+  .no-tap-highlight { -webkit-tap-highlight-color: transparent; }
 }
