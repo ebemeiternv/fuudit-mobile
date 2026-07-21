@@ -45,27 +45,18 @@ const ChefScreen = () => (
       <section>
         <h3 className="text-lg font-bold text-[hsl(var(--app-foreground))] mb-3 px-1">What would you like?</h3>
         <div className="grid grid-cols-2 gap-3">
-          {prompts.map((p) => {
-            const tokenMap: Record<string, string> = {
-              violet: "app-accent-violet",
-              sky: "app-accent-sky",
-              warm: "app-accent-warm",
-              berry: "app-accent-berry",
-            };
-            const token = tokenMap[p.tint];
-            return (
-              <button
-                key={p.title}
-                className="app-card p-4 text-left no-tap-highlight active:scale-[0.98] transition-transform"
-              >
-                <div className={`h-10 w-10 rounded-xl bg-[hsl(var(--${token})_/_0.12)] text-[hsl(var(--${token}))] grid place-items-center mb-3`}>
-                  <p.Icon className="h-5 w-5" />
-                </div>
-                <p className="font-semibold text-[hsl(var(--app-foreground))] text-sm leading-snug">{p.title}</p>
-                <p className="text-xs text-[hsl(var(--app-muted))] mt-1">{p.subtitle}</p>
-              </button>
-            );
-          })}
+          {prompts.map((p) => (
+            <button
+              key={p.title}
+              className="app-card p-4 text-left no-tap-highlight active:scale-[0.98] transition-transform"
+            >
+              <div className={`h-10 w-10 rounded-xl grid place-items-center mb-3 ${p.tint}`}>
+                <p.Icon className="h-5 w-5" />
+              </div>
+              <p className="font-semibold text-[hsl(var(--app-foreground))] text-sm leading-snug">{p.title}</p>
+              <p className="text-xs text-[hsl(var(--app-muted))] mt-1">{p.subtitle}</p>
+            </button>
+          ))}
         </div>
       </section>
 
