@@ -16,6 +16,7 @@ import ChefScreen from "./pages/app/ChefScreen";
 import MealPlanScreen from "./pages/app/MealPlanScreen";
 import GroceryScreen from "./pages/app/GroceryScreen";
 import ProfileScreen from "./pages/app/ProfileScreen";
+import OnboardingScreen from "./pages/app/OnboardingScreen";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             {/* Authenticated app */}
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Navigate to="/app/home" replace />} />
+              <Route path="onboarding" element={<OnboardingScreen />} />
               <Route path="home" element={<HomeScreen />} />
               <Route path="pantry" element={<PantryScreen />} />
               <Route path="chef" element={<ChefScreen />} />

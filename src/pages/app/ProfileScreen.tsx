@@ -1,32 +1,15 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
 
-const rows = [
-  { Icon: Users, label: "Household", value: "1 person" },
-  { Icon: Leaf, label: "Dietary preferences", value: "Not set" },
-  { Icon: Bell, label: "Notifications", value: "On" },
-  { Icon: Shield, label: "Privacy", value: "" },
-  { Icon: Settings, label: "Preferences", value: "" },
-  { Icon: HelpCircle, label: "Help & support", value: "" },
-];
-
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
-  const [name, setName] = useState("");
+  const { data: profile } = useProfile(user?.id);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle().then(({ data }) => {
-      setName(data?.display_name || "");
-    });
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -34,7 +17,20 @@ const ProfileScreen = () => {
     navigate("/", { replace: true });
   };
 
-  const displayName = name || user?.email?.split("@")[0] || "You";
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "You";
+  const householdSize = profile?.household_size ?? 1;
+  const dietary = profile?.dietary_preferences?.length
+    ? `${profile.dietary_preferences.length} selected`
+    : "Not set";
+
+  const rows = [
+    { Icon: Users, label: "Household", value: `${householdSize} ${householdSize === 1 ? "person" : "people"}` },
+    { Icon: Leaf, label: "Dietary preferences", value: dietary },
+    { Icon: Bell, label: "Notifications", value: "On" },
+    { Icon: Shield, label: "Privacy", value: "" },
+    { Icon: Settings, label: "Preferences", value: "" },
+    { Icon: HelpCircle, label: "Help & support", value: "" },
+  ];
 
   return (
     <div>
