@@ -155,7 +155,7 @@ export const HouseholdSheet = ({ open, onOpenChange }: BaseProps) => {
           </div>
         </div>
 
-        <SheetFooter className="pb-safe">
+        <SheetFooter className="safe-bottom">
           <Button
             onClick={save}
             disabled={busy}
@@ -262,7 +262,7 @@ export const DietarySheet = ({ open, onOpenChange }: BaseProps) => {
           </div>
         </div>
 
-        <SheetFooter className="pb-safe">
+        <SheetFooter className="safe-bottom">
           <Button
             onClick={save}
             disabled={busy}
@@ -296,7 +296,7 @@ export const NotificationsSheet = ({ open, onOpenChange }: BaseProps) => (
           this ships.
         </p>
       </div>
-      <SheetFooter className="pb-safe">
+      <SheetFooter className="safe-bottom">
         <Button
           onClick={() => onOpenChange(false)}
           className="w-full h-12 rounded-xl font-semibold bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white"
@@ -362,7 +362,7 @@ export const PrivacySheet = ({ open, onOpenChange }: BaseProps) => (
         </p>
       </div>
 
-      <SheetFooter className="pb-safe">
+      <SheetFooter className="safe-bottom">
         <Button
           onClick={() => onOpenChange(false)}
           className="w-full h-12 rounded-xl font-semibold bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white"
@@ -435,7 +435,7 @@ export const HelpSheet = ({ open, onOpenChange }: BaseProps) => (
         </p>
       </div>
 
-      <SheetFooter className="pb-safe">
+      <SheetFooter className="safe-bottom">
         <Button
           onClick={() => onOpenChange(false)}
           className="w-full h-12 rounded-xl font-semibold bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white"
