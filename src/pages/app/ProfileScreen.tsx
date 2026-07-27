@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
+import { useSavedRecipes } from "@/hooks/queries/useSavedRecipes";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+import { Bell, Bookmark, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
