@@ -81,12 +81,17 @@ const ChefScreen = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inFlightRef = useRef(false); // extra guard against double-taps
 
+  // Clear the inline error whenever the user switches conversations.
+  useEffect(() => {
+    setLastError((prev) => (prev && prev.convoId !== activeId ? null : prev));
+  }, [activeId]);
+
   // Autoscroll to newest message
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, send.isPending]);
+  }, [messages, send.isPending, lastError]);
 
   const startNew = async () => {
     if (!userId) return;
