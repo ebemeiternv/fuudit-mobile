@@ -122,15 +122,17 @@ const ProfileScreen = () => {
           {rows.map(({ Icon, label, value, onClick }) => (
             <button
               key={label}
+              type="button"
               onClick={onClick}
-              className="flex items-center gap-3 p-4 w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors"
+              aria-label={value ? `${label}, ${value}` : label}
+              className="flex items-center gap-3 p-4 min-h-[52px] w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--app-primary))]"
             >
               <div className="h-9 w-9 rounded-xl bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] grid place-items-center">
-                <Icon className="h-[18px] w-[18px]" />
+                <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
               </div>
               <span className="flex-1 font-medium text-[hsl(var(--app-foreground))]">{label}</span>
               {value && <span className="text-sm text-[hsl(var(--app-muted))]">{value}</span>}
-              <ChevronRight className="h-4 w-4 text-[hsl(var(--app-muted))]" />
+              <ChevronRight className="h-4 w-4 text-[hsl(var(--app-muted))]" aria-hidden="true" />
             </button>
           ))}
         </div>
