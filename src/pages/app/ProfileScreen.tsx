@@ -6,6 +6,7 @@ import { useSavedRecipes } from "@/hooks/queries/useSavedRecipes";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
 import InstallRow from "@/pwa/InstallRow";
+import { BUILD_ID } from "@/pwa/buildId";
 import { Bell, Bookmark, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
 
 
@@ -106,7 +107,9 @@ const ProfileScreen = () => {
           <LogOut className="h-4 w-4" /> Sign out
         </button>
 
-        <p className="text-center text-xs text-[hsl(var(--app-muted))] pb-4">Fuudit · v0.2</p>
+        <p className="text-center text-xs text-[hsl(var(--app-muted))] pb-4">
+          Fuudit · Beta · Build {BUILD_ID}
+        </p>
       </div>
     </div>
   );
