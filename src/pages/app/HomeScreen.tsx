@@ -106,6 +106,26 @@ const HomeScreen = () => {
           )}
         </div>
 
+        {ambientHint && (
+          <Link
+            to="/app/pantry"
+            className="app-card p-4 flex items-start gap-3 no-tap-highlight active:scale-[0.99] transition-transform border border-[hsl(var(--app-primary))]/20 bg-[hsl(var(--app-primary-soft))]/60"
+          >
+            <div className="h-9 w-9 rounded-xl bg-white text-[hsl(var(--app-primary))] grid place-items-center shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--app-primary))]">
+                Smart insight
+              </p>
+              <p className="text-sm text-[hsl(var(--app-foreground))] mt-0.5">
+                {ambientHint.message}
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))] mt-1" />
+          </Link>
+        )}
+
         {/* Today's meals */}
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
