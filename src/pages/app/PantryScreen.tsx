@@ -171,6 +171,16 @@ const PantryScreen = () => {
     setSheetOpen(true);
   };
 
+  const openQuickAdd = (name: string) => {
+    setEditing(null);
+    // Providing the name is enough — the sheet's smart-defaults hook will
+    // recognise the identity key and prefill category, unit, location and
+    // expiry from what the user usually does with this product.
+    setScanInitial({ name });
+    setSheetOpen(true);
+  };
+
+
   const handleSubmit = async (payload: Parameters<typeof createMut.mutateAsync>[0]) => {
     if (editing) {
       await updateMut.mutateAsync({ id: editing.id, patch: payload });
