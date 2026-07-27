@@ -143,10 +143,27 @@ const PantryScreen = () => {
 
   const openAdd = () => {
     setEditing(null);
+    setScanInitial(undefined);
     setSheetOpen(true);
   };
   const openEdit = (item: PantryItem) => {
     setEditing(item);
+    setScanInitial(undefined);
+    setSheetOpen(true);
+  };
+  const openScan = () => setScanOpen(true);
+  const handleScanPrefill = (values: ScannedInitialValues) => {
+    setEditing(null);
+    setScanInitial(values);
+    setSheetOpen(true);
+  };
+  const handleScanDuplicate = (existing: PantryItem) => {
+    toast({
+      title: "Already in your pantry",
+      description: `${existing.name} — update the existing item instead.`,
+    });
+    setScanInitial(undefined);
+    setEditing(existing);
     setSheetOpen(true);
   };
 
