@@ -27,7 +27,7 @@ import { toast } from "@/hooks/use-toast";
 
 type Mode = "search" | "pantry";
 
-const ChefScreen = () => {
+const DiscoverScreen = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const { data: profile } = useProfile(userId);
@@ -310,4 +310,4 @@ const ChefScreen = () => {
   );
 };
 
-export default ChefScreen;
+export default DiscoverScreen;
