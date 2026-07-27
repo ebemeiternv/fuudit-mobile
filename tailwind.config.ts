@@ -19,6 +19,11 @@ export default {
 			}
 		},
 		extend: {
+			screens: {
+				// Custom breakpoint for the tightest phones (≤360 px).
+				// Below `xs`, six-tab BottomNav labels collapse to icons-only.
+				xs: '360px',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

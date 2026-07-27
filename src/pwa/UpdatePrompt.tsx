@@ -46,9 +46,10 @@ const UpdatePrompt = () => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed left-1/2 -translate-x-1/2 z-[80] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-2xl bg-[hsl(var(--app-foreground))] text-white shadow-xl flex items-center gap-3"
+      className="hide-when-modal fixed left-1/2 -translate-x-1/2 z-[80] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-2xl bg-[hsl(var(--app-foreground))] text-white shadow-xl flex items-center gap-3"
       style={{
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)",
+        // Sit clearly above the bottom nav (var --app-nav-h) + iOS home indicator.
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--app-nav-h, 68px) + 0.75rem)",
       }}
     >
       <RefreshCw

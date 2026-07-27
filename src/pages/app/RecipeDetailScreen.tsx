@@ -133,7 +133,7 @@ const RecipeDetailScreen = () => {
   const instructionsHtml = steps.length === 0 ? sanitizeHtml(recipe.instructions) : "";
 
   return (
-    <div className="pb-8">
+    <div className="pb-nav">
       <div className="relative">
         <div className="aspect-[16/10] bg-[hsl(var(--app-subtle))]">
           {recipe.image ? (
@@ -151,20 +151,21 @@ const RecipeDetailScreen = () => {
         <button
           onClick={() => navigate(-1)}
           aria-label="Back"
-          className="absolute top-4 left-4 h-10 w-10 rounded-full bg-white/95 backdrop-blur grid place-items-center shadow-md"
+          className="absolute top-4 left-4 h-11 w-11 rounded-full bg-white/95 backdrop-blur grid place-items-center shadow-md focus-visible:ring-2 focus-visible:ring-[hsl(var(--app-primary))]"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <button
           onClick={handleToggleSave}
           disabled={saveMut.isPending || unsaveMut.isPending}
-          aria-label={isSaved ? "Unsave recipe" : "Save recipe"}
-          className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/95 backdrop-blur grid place-items-center shadow-md disabled:opacity-60"
+          aria-label={isSaved ? "Remove from saved recipes" : "Save recipe"}
+          aria-pressed={isSaved}
+          className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/95 backdrop-blur grid place-items-center shadow-md disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[hsl(var(--app-primary))]"
         >
           {isSaved ? (
-            <BookmarkCheck className="h-4 w-4 text-[hsl(var(--app-primary))]" />
+            <BookmarkCheck className="h-4 w-4 text-[hsl(var(--app-primary))]" aria-hidden="true" />
           ) : (
-            <Bookmark className="h-4 w-4" />
+            <Bookmark className="h-4 w-4" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -177,12 +178,12 @@ const RecipeDetailScreen = () => {
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[hsl(var(--app-muted))]">
             {recipe.ready_minutes != null && (
               <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4" /> {recipe.ready_minutes} min
+                <Clock className="h-4 w-4" aria-hidden="true" /> {recipe.ready_minutes} min
               </span>
             )}
             {recipe.servings != null && (
               <span className="inline-flex items-center gap-1.5">
-                <Users className="h-4 w-4" /> {recipe.servings} servings
+                <Users className="h-4 w-4" aria-hidden="true" /> {recipe.servings} servings
               </span>
             )}
           </div>
@@ -198,15 +199,8 @@ const RecipeDetailScreen = () => {
               ))}
             </div>
           )}
-
-          <Button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="mt-4 h-11 w-full rounded-2xl bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white font-semibold"
-          >
-            <CalendarPlus className="h-4 w-4 mr-2" /> Add to meal plan
-          </Button>
         </div>
+
 
 
         {summaryHtml && (
@@ -312,6 +306,29 @@ const RecipeDetailScreen = () => {
           {creditsText ?? sourceName ?? "Recipe data via Spoonacular."}{" "}
           {data.license ? `· ${data.license}` : ""}
         </p>
+      </div>
+
+      {/*
+        Sticky action bar: the primary "Add to meal plan" action must stay
+        reachable with one hand — long recipes would otherwise hide it below
+        the fold. Sits above the bottom nav via var(--app-nav-h) and respects
+        the iOS home-indicator inset. Radix Sheet is z-50; this bar is z-30 so
+        the Add-to-Meal-Plan sheet renders over it.
+      */}
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[hsl(var(--app-border))] bg-white/95 backdrop-blur px-4 pt-3 hide-when-modal"
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--app-nav-h, 68px))",
+          paddingBottom: "0.75rem",
+        }}
+      >
+        <Button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="h-12 w-full rounded-2xl bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white font-semibold shadow-md"
+        >
+          <CalendarPlus className="h-4 w-4 mr-2" aria-hidden="true" /> Add to meal plan
+        </Button>
       </div>
 
       <AddToMealPlanSheet

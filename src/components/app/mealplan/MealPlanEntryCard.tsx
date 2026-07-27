@@ -87,10 +87,11 @@ const MealPlanEntryCard = ({ entry, onEdit, onMove, onDelete, deleting }: Props)
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            aria-label="Entry actions"
-            className="h-9 w-9 rounded-full grid place-items-center bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] active:scale-95 no-tap-highlight"
+            aria-label={`Meal options for ${title}`}
+            aria-haspopup="menu"
+            className="h-11 w-11 shrink-0 rounded-full grid place-items-center bg-white border border-[hsl(var(--app-border))] text-[hsl(var(--app-foreground))] shadow-sm active:scale-95 no-tap-highlight focus-visible:ring-2 focus-visible:ring-[hsl(var(--app-primary))]"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">

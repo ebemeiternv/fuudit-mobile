@@ -68,12 +68,22 @@ const Auth = () => {
   };
 
   return (
-    <div className="app-shell flex flex-col safe-top safe-bottom px-6">
-      <Link to="/" className="inline-flex items-center gap-2 text-sm text-[hsl(var(--app-muted))] py-4 no-tap-highlight">
-        <ArrowLeft className="h-4 w-4" /> Back
+    // min-h-[100dvh] shrinks with the iOS keyboard so scrolling reveals the
+    // primary CTA. Top-aligned (no justify-center) so opening the keyboard
+    // doesn't re-center the form and push social buttons off-screen.
+    <div
+      className="min-h-[100dvh] flex flex-col px-6 bg-[hsl(var(--app-bg))] text-[hsl(var(--app-foreground))] safe-top"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
+    >
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm text-[hsl(var(--app-muted))] py-4 no-tap-highlight min-h-11"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
       </Link>
 
-      <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full py-6">
+      <div className="flex flex-col max-w-md mx-auto w-full pb-8">
+
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-[hsl(var(--app-primary))] text-white grid place-items-center text-2xl font-bold shadow-lg">
             F

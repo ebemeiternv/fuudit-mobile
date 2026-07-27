@@ -1,5 +1,84 @@
 # Fuudit Changelog
 
+## Mobile Beta UX Audit — Round 2 (Deferred Friction)
+
+Follow-up to Round 1. Fixes the medium-friction items logged for a second pass. No new features, no redesign, no changes to database / auth / Product Intelligence / service-worker strategy / navigation structure.
+
+### Shared foundations
+
+- **`src/index.css`** — introduced a shared `--app-nav-h: 68px` variable on `.app-shell`, a `.pb-nav` utility (content padding that clears bottom nav + iOS home indicator), and a `.hide-when-modal` utility that fades floating chrome when Radix locks the body (Dialog / Sheet open). Update prompt and Recipe Detail sticky bar both use this.
+- **`tailwind.config.ts`** — added an `xs: 360px` breakpoint (inside `extend.screens`, so default `sm/md/lg` are preserved). Used to collapse BottomNav labels and Grocery header text on the tightest phones.
+
+### Priority 1 — Auth screen and iOS keyboard
+
+- `src/pages/Auth.tsx` no longer relies on `flex-1 justify-center` inside a `100dvh` shell. That combination re-centered the form when the iOS keyboard shrank the visual viewport, hiding social buttons above and pushing the submit CTA down. The layout is now top-aligned with `min-h-[100dvh]` so the whole page scrolls above the keyboard, with `safe-top` and `paddingBottom: calc(env(safe-area-inset-bottom) + 1.5rem)`. Back link is a 44 px min-height row. No visual redesign.
+
+### Priority 2 — ScreenHeader narrow-width resilience
+
+- `src/components/app/ScreenHeader.tsx` reworked as the shared responsive rule:
+  - Left and right slots use `shrink-0` and never squeeze.
+  - Title column uses `min-w-0 flex-1` and truncates by default. Screens that need wrapping opt in with the new `allowTitleWrap` prop.
+  - Subtitle uses `line-clamp-2`.
+  - Title steps down from 28 px to 26 px on `<sm` widths.
+- `src/pages/app/GroceryScreen.tsx` — narrow-width polish: the "Generate" button is icon-only under `xs` (label appears at 360 px and up), preserving the "+" tap target and the "Grocery" title.
+
+### Priority 3 — Bottom navigation crowding
+
+- `src/components/app/BottomNav.tsx`:
+  - `<nav aria-label="Primary">` for screen readers.
+  - Every `NavLink` has an explicit `aria-label` (inactive tabs stay named even when the visible label is hidden).
+  - Row is `min-h-11` so every tap target clears 44 px vertically, and each tab is `min-w-0` so long labels can't push neighbours off-screen.
+  - Below `xs` (≤360 px) only the active tab shows its label; inactive tabs are icon-only visually but retain their accessible name. At 360 px+, all six labels return.
+  - Decorative icon chips and label spans are marked `aria-hidden="true"` (the accessible name comes from the link's `aria-label`).
+
+### Priority 4 — Update prompt vs floating actions
+
+- `src/pwa/UpdatePrompt.tsx` now anchors to `calc(env(safe-area-inset-bottom) + var(--app-nav-h) + 0.75rem)` — a single source of truth shared with the bottom nav. That guarantees the prompt sits above the nav (and above iOS home indicator) but does not overlap Radix sheets: it now carries the shared `.hide-when-modal` class, so any open Sheet / Dialog / AlertDialog (which Radix locks the body for) hides it. The user-controlled update behaviour is unchanged.
+
+### Priority 5 — Recipe Detail primary action
+
+- `src/pages/app/RecipeDetailScreen.tsx`:
+  - The mid-page "Add to meal plan" button is replaced by a persistent sticky bottom action bar. Same handler, same sheet — one primary CTA, always reachable with one hand.
+  - The bar sits at `calc(env(safe-area-inset-bottom) + var(--app-nav-h))`, `z-30`, behind the Add-to-Meal-Plan sheet (`z-50`), and hides when a modal is open via `.hide-when-modal`.
+  - Page uses the new `.pb-nav` utility so ingredients / nutrition / credits are not covered.
+  - Back and Save buttons bumped to 44 px, both get `focus-visible:ring-2`, and Save gains `aria-pressed={isSaved}` plus an action-oriented label ("Save recipe" / "Remove from saved recipes").
+
+### Priority 6 — Meal Plan action affordance
+
+- `src/components/app/mealplan/MealPlanEntryCard.tsx` kebab trigger: bumped from 36 px to 44 px, changed from muted grey chip to a white surface with border + shadow so the affordance reads as tappable, kept the same menu contents (Edit / Move / Remove). `aria-label` is now action-specific — "Meal options for {title}" — and `aria-haspopup="menu"` is set. Focus ring added.
+
+### Priority 7 — Accessibility cleanup
+
+- Every icon in the changed components is now `aria-hidden="true"` (BottomNav icons and labels, MealPlanEntryCard kebab, Recipe Detail header + sticky bar, Grocery header, Auth back arrow).
+- Icon-only buttons carry action-oriented `aria-label`s ("Save recipe" / "Remove from saved recipes", "Meal options for …", "Generate grocery list from meal plan", "Add grocery item").
+- BottomNav uses `aria-label="Primary"` on the `<nav>` landmark.
+- Radix Sheet / Dialog / AlertDialog components already provide announced titles via shadcn primitives — untouched.
+
+### Remaining deferred / cosmetic
+
+Still logged, not touched this round:
+- Grocery row check circle visual size (32 px inside a 44 px row) — reads fine in testing.
+- Chef send button visual size (40 px circle inside padded hit area).
+- Empty-state copy tone consistency across Pantry / Meal Plan / Grocery.
+- Offline banner + Update prompt vertical stacking when both appear (rare in beta; prompt now hides behind sheets, banner remains at top).
+- Onboarding "skip for now" hit area.
+
+### Manual iPhone testing checklist
+
+1. Auth: open sign-in, tap email field — keyboard opens, "Sign in" button reachable by scrolling; social buttons never cover the CTA.
+2. Auth: switch to signup — Name / Email / Password all scroll above keyboard.
+3. Home / Pantry / Chef / Meals / Grocery / Profile at 320 px width: BottomNav shows six icons; the active tab's label appears; no clipping; every icon hit is at least 44 px.
+4. Same screens at 375 px: all six labels appear, no overlap with headers.
+5. Grocery header at 320 px: "Grocery" title + count fit on one line; "Generate" is icon-only; "+" is 44 px.
+6. Pantry header: "Pantry" title + counts fit; "Scan" and "+" both remain tappable.
+7. Recipe Detail: sticky "Add to meal plan" bar visible without scrolling. Tap it → sheet opens above the bar; the bar fades under the sheet; primary action inside the sheet reachable with keyboard open (dvh + hide-when-modal).
+8. Meal Plan card: kebab now reads as a button (border + shadow); VoiceOver reads "Meal options for {title}, button, pop-up menu"; Edit / Move / Remove all fire.
+9. Deploy new build → foreground the app → "A new version of Fuudit is ready" prompt sits above bottom nav but under any open sheet; tapping Update reloads once on same route.
+10. Airplane mode + open a sheet: offline banner still visible at top; update prompt (if armed) hides under the sheet.
+11. VoiceOver rotor: `nav` landmark named "Primary"; six tab links each announce their destination even when only the icon is visible.
+
+
+
 ## Mobile Beta UX Audit — Round 1
 
 Audit of the installed PWA on iPhone-sized screens across all 16 flows. Focus: real-use friction, not redesign. Blocker and high-friction items are fixed in this pass; medium/cosmetic items are logged for a follow-up.
