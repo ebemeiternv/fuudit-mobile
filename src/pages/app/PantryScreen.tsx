@@ -86,6 +86,8 @@ const PantryScreen = () => {
   const statusMut = useSetPantryItemStatus(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanInitial, setScanInitial] = useState<ScannedInitialValues | undefined>(undefined);
   const [editing, setEditing] = useState<PantryItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PantryItem | null>(null);
   const [search, setSearch] = useState("");
