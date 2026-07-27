@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { chefRepository, type ChefMessageInsert } from "@/repositories/chef";
+import { chefRepository } from "@/repositories/chef";
 import { queryKeys } from "./keys";
 
 export const useChefConversations = (userId: string | undefined) =>
@@ -25,13 +25,32 @@ export const useCreateChefConversation = (userId: string | undefined) => {
   });
 };
 
-export const useAddChefMessage = (userId: string | undefined) => {
+export const useRenameChefConversation = (userId: string | undefined) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: Omit<ChefMessageInsert, "user_id">) =>
-      chefRepository.addMessage({ ...input, user_id: userId! }),
-    onSuccess: (msg) => {
-      qc.invalidateQueries({ queryKey: queryKeys.chef.messages(msg.conversation_id) });
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      chefRepository.renameConversation(id, title),
+    onSuccess: () =>
+      userId && qc.invalidateQueries({ queryKey: queryKeys.chef.conversations(userId) }),
+  });
+};
+
+export const useDeleteChefConversation = (userId: string | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => chefRepository.deleteConversation(id),
+    onSuccess: () =>
+      userId && qc.invalidateQueries({ queryKey: queryKeys.chef.conversations(userId) }),
+  });
+};
+
+export const useSendChefMessage = (userId: string | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, message }: { conversationId: string; message: string }) =>
+      chefRepository.sendMessage(conversationId, message),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.chef.messages(vars.conversationId) });
       if (userId) qc.invalidateQueries({ queryKey: queryKeys.chef.conversations(userId) });
     },
   });

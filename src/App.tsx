@@ -20,6 +20,7 @@ import ProfileScreen from "./pages/app/ProfileScreen";
 import OnboardingScreen from "./pages/app/OnboardingScreen";
 import RecipeDetailScreen from "./pages/app/RecipeDetailScreen";
 import SavedRecipesScreen from "./pages/app/SavedRecipesScreen";
+import DiscoverScreen from "./pages/app/DiscoverScreen";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="pantry" element={<PantryScreen />} />
               <Route path="pantry/history" element={<PantryHistoryScreen />} />
               <Route path="chef" element={<ChefScreen />} />
+              <Route path="discover" element={<DiscoverScreen />} />
               <Route path="meal-plan" element={<MealPlanScreen />} />
               <Route path="grocery" element={<GroceryScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
