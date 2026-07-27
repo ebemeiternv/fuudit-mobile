@@ -63,6 +63,15 @@ type FormState = {
   purchased_on: string;
   expires_on: string;
   notes: string;
+  // Optional product metadata (from barcode scans). Not user-editable in the
+  // form itself, but preserved so submit can persist it.
+  barcode: string;
+  brand: string;
+  product_image_url: string;
+  product_source: string;
+  product_source_id: string;
+  package_quantity: string;
+  package_unit: UnitType | "";
 };
 
 const empty: FormState = {
@@ -74,6 +83,13 @@ const empty: FormState = {
   purchased_on: "",
   expires_on: "",
   notes: "",
+  barcode: "",
+  brand: "",
+  product_image_url: "",
+  product_source: "",
+  product_source_id: "",
+  package_quantity: "",
+  package_unit: "",
 };
 
 type Props = {
@@ -91,6 +107,13 @@ type Props = {
     purchased_on: string | null;
     expires_on: string | null;
     notes: string | null;
+    barcode?: string | null;
+    brand?: string | null;
+    product_image_url?: string | null;
+    product_source?: string | null;
+    product_source_id?: string | null;
+    package_quantity?: number | null;
+    package_unit?: UnitType | null;
   }) => Promise<void>;
   saving?: boolean;
 };
@@ -103,6 +126,7 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
     if (!open) return;
     if (item) {
       setForm({
+        ...empty,
         name: item.name,
         quantity: item.quantity != null ? String(item.quantity) : "",
         unit: (item.unit as UnitType) ?? "",
@@ -111,6 +135,20 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         purchased_on: item.purchased_on ?? "",
         expires_on: item.expires_on ?? "",
         notes: item.notes ?? "",
+        barcode: (item as { barcode?: string | null }).barcode ?? "",
+        brand: (item as { brand?: string | null }).brand ?? "",
+        product_image_url:
+          (item as { product_image_url?: string | null }).product_image_url ?? "",
+        product_source:
+          (item as { product_source?: string | null }).product_source ?? "",
+        product_source_id:
+          (item as { product_source_id?: string | null }).product_source_id ?? "",
+        package_quantity:
+          (item as { package_quantity?: number | null }).package_quantity != null
+            ? String((item as { package_quantity?: number | null }).package_quantity)
+            : "",
+        package_unit:
+          ((item as { package_unit?: UnitType | null }).package_unit as UnitType) ?? "",
       });
     } else {
       setForm({ ...empty, ...(initialValues ?? {}) });
@@ -142,6 +180,13 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         purchased_on: form.purchased_on || null,
         expires_on: form.expires_on || null,
         notes: form.notes?.trim() || null,
+        barcode: form.barcode || null,
+        brand: form.brand || null,
+        product_image_url: form.product_image_url || null,
+        product_source: form.product_source || null,
+        product_source_id: form.product_source_id || null,
+        package_quantity: form.package_quantity ? Number(form.package_quantity) : null,
+        package_unit: form.package_unit ? (form.package_unit as UnitType) : null,
       });
       onOpenChange(false);
     } catch (err) {
@@ -171,6 +216,33 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
               Track what's in your kitchen and when it expires.
             </SheetDescription>
           </SheetHeader>
+
+          {form.barcode && (
+            <div className="mx-5 mt-2 mb-1 flex items-center gap-3 rounded-2xl border border-[hsl(var(--app-border))] bg-[hsl(var(--app-subtle))] p-3">
+              {form.product_image_url ? (
+                <img
+                  src={form.product_image_url}
+                  alt=""
+                  loading="lazy"
+                  className="h-12 w-12 rounded-lg object-cover bg-white"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-white grid place-items-center text-xs font-bold text-[hsl(var(--app-muted))]">
+                  {form.brand?.[0]?.toUpperCase() ?? "#"}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-[hsl(var(--app-muted))] uppercase tracking-wide">
+                  {form.product_source === "openfoodfacts" ? "Open Food Facts" : "Scanned product"}
+                </p>
+                <p className="text-sm text-[hsl(var(--app-foreground))] truncate">
+                  {[form.brand, form.package_quantity ? `${form.package_quantity} ${form.package_unit || ""}`.trim() : null]
+                    .filter(Boolean)
+                    .join(" · ") || `Barcode ${form.barcode}`}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="px-5 py-4 space-y-4">
             <div className="space-y-1.5">

@@ -10,6 +10,7 @@ import {
   Pencil,
   SlidersHorizontal,
   History as HistoryIcon,
+  ScanLine,
 } from "lucide-react";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,9 @@ import LoadingState from "@/components/app/states/LoadingState";
 import EmptyState from "@/components/app/states/EmptyState";
 import ErrorState from "@/components/app/states/ErrorState";
 import PantryItemSheet from "@/components/app/pantry/PantryItemSheet";
+import BarcodeScanSheet, {
+  type ScannedInitialValues,
+} from "@/components/app/pantry/BarcodeScanSheet";
 import {
   CATEGORIES,
   LOCATIONS,
@@ -82,6 +86,8 @@ const PantryScreen = () => {
   const statusMut = useSetPantryItemStatus(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanInitial, setScanInitial] = useState<ScannedInitialValues | undefined>(undefined);
   const [editing, setEditing] = useState<PantryItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PantryItem | null>(null);
   const [search, setSearch] = useState("");
@@ -137,10 +143,27 @@ const PantryScreen = () => {
 
   const openAdd = () => {
     setEditing(null);
+    setScanInitial(undefined);
     setSheetOpen(true);
   };
   const openEdit = (item: PantryItem) => {
     setEditing(item);
+    setScanInitial(undefined);
+    setSheetOpen(true);
+  };
+  const openScan = () => setScanOpen(true);
+  const handleScanPrefill = (values: ScannedInitialValues) => {
+    setEditing(null);
+    setScanInitial(values);
+    setSheetOpen(true);
+  };
+  const handleScanDuplicate = (existing: PantryItem) => {
+    toast({
+      title: "Already in your pantry",
+      description: `${existing.name} — update the existing item instead.`,
+    });
+    setScanInitial(undefined);
+    setEditing(existing);
     setSheetOpen(true);
   };
 
@@ -205,6 +228,13 @@ const PantryScreen = () => {
             >
               <HistoryIcon className="h-5 w-5 text-[hsl(var(--app-foreground))]" />
             </Link>
+            <button
+              onClick={openScan}
+              aria-label="Scan barcode"
+              className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center no-tap-highlight active:scale-95 transition-transform"
+            >
+              <ScanLine className="h-5 w-5 text-[hsl(var(--app-foreground))]" />
+            </button>
             <button
               onClick={openAdd}
               aria-label="Add pantry item"
@@ -430,8 +460,17 @@ const PantryScreen = () => {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         item={editing}
+        initialValues={scanInitial}
         onSubmit={handleSubmit}
         saving={createMut.isPending || updateMut.isPending}
+      />
+
+      <BarcodeScanSheet
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        userId={userId}
+        onPrefill={handleScanPrefill}
+        onDuplicate={handleScanDuplicate}
       />
 
       <AlertDialog

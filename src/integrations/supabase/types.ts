@@ -242,6 +242,8 @@ export type Database = {
       }
       pantry_items: {
         Row: {
+          barcode: string | null
+          brand: string | null
           category: string | null
           created_at: string
           expires_on: string | null
@@ -249,6 +251,11 @@ export type Database = {
           location: Database["public"]["Enums"]["pantry_location"]
           name: string
           notes: string | null
+          package_quantity: number | null
+          package_unit: Database["public"]["Enums"]["unit_type"] | null
+          product_image_url: string | null
+          product_source: string | null
+          product_source_id: string | null
           purchased_on: string | null
           quantity: number | null
           status: Database["public"]["Enums"]["pantry_item_status"]
@@ -257,6 +264,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          barcode?: string | null
+          brand?: string | null
           category?: string | null
           created_at?: string
           expires_on?: string | null
@@ -264,6 +273,11 @@ export type Database = {
           location?: Database["public"]["Enums"]["pantry_location"]
           name: string
           notes?: string | null
+          package_quantity?: number | null
+          package_unit?: Database["public"]["Enums"]["unit_type"] | null
+          product_image_url?: string | null
+          product_source?: string | null
+          product_source_id?: string | null
           purchased_on?: string | null
           quantity?: number | null
           status?: Database["public"]["Enums"]["pantry_item_status"]
@@ -272,6 +286,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          barcode?: string | null
+          brand?: string | null
           category?: string | null
           created_at?: string
           expires_on?: string | null
@@ -279,6 +295,11 @@ export type Database = {
           location?: Database["public"]["Enums"]["pantry_location"]
           name?: string
           notes?: string | null
+          package_quantity?: number | null
+          package_unit?: Database["public"]["Enums"]["unit_type"] | null
+          product_image_url?: string | null
+          product_source?: string | null
+          product_source_id?: string | null
           purchased_on?: string | null
           quantity?: number | null
           status?: Database["public"]["Enums"]["pantry_item_status"]
