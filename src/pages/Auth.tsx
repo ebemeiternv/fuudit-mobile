@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const Auth = () => {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [params] = useSearchParams();
+  const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -22,6 +24,7 @@ const Auth = () => {
   useEffect(() => {
     if (!loading && session) navigate("/app/home", { replace: true });
   }, [session, loading, navigate]);
+
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
