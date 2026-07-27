@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag } from "lucide-react";
+import GenerateGrocerySheet from "@/components/app/grocery/GenerateGrocerySheet";
+import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import LoadingState from "@/components/app/states/LoadingState";
 import ErrorState from "@/components/app/states/ErrorState";
@@ -48,6 +50,8 @@ const MealPlanScreen = () => {
     return d;
   });
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const { data: groceryItems = [] } = useGroceryItems(userId);
 
   const weekStart = useMemo(() => startOfWeekMonday(selected), [selected]);
   const weekDays = useMemo(
@@ -105,19 +109,28 @@ const MealPlanScreen = () => {
             : "Plan your week, meal by meal"
         }
         right={
-          <button
-            onClick={() =>
-              setSheet({
-                mode: "add",
-                date: selectedIso,
-                mealType: contextualSlot(),
-              })
-            }
-            aria-label="Add meal"
-            className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGenerateOpen(true)}
+              aria-label="Generate grocery list from meal plan"
+              className="h-11 px-3 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform no-tap-highlight"
+            >
+              <ShoppingBag className="h-4 w-4" /> List
+            </button>
+            <button
+              onClick={() =>
+                setSheet({
+                  mode: "add",
+                  date: selectedIso,
+                  mealType: contextualSlot(),
+                })
+              }
+              aria-label="Add meal"
+              className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
         }
       />
 
@@ -304,6 +317,14 @@ const MealPlanScreen = () => {
               }
             : undefined
         }
+      />
+
+      <GenerateGrocerySheet
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        defaultFrom={fromIso}
+        defaultTo={toIso}
+        existingPending={groceryItems.filter((i) => !i.checked)}
       />
     </div>
   );

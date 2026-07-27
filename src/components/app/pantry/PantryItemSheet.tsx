@@ -80,6 +80,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item?: PantryItem | null;
+  /** Seeds the form when adding a new item (ignored when editing). */
+  initialValues?: Partial<FormState>;
   onSubmit: (payload: {
     name: string;
     quantity: number | null;
@@ -93,7 +95,7 @@ type Props = {
   saving?: boolean;
 };
 
-const PantryItemSheet = ({ open, onOpenChange, item, onSubmit, saving }: Props) => {
+const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, saving }: Props) => {
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -111,10 +113,10 @@ const PantryItemSheet = ({ open, onOpenChange, item, onSubmit, saving }: Props) 
         notes: item.notes ?? "",
       });
     } else {
-      setForm(empty);
+      setForm({ ...empty, ...(initialValues ?? {}) });
     }
     setErrors({});
-  }, [open, item]);
+  }, [open, item, initialValues]);
 
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));

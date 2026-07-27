@@ -253,3 +253,44 @@
 ### Remaining Slice 6 (Grocery) work
 - Generate grocery items from planned meals, subtract pantry, deduplicate, unit-normalise.
 - Auto pantry deduction on meal completion (still TBD scope).
+
+## Slice 6 — Functional Grocery List and Meal-Plan Generation
+
+### Schema
+- `grocery_items`: added `category` (text), `notes` (text), `meal_plan_entry_id` (uuid, FK to `meal_plan_entries` ON DELETE SET NULL), plus `updated_at` trigger and indexes on `(user_id, checked)` and `(user_id, meal_plan_entry_id)`. RLS remains user-scoped.
+
+### Repository & queries
+- `groceryRepository`: added `clearPurchased`, `bulkInsert`.
+- New hooks in `useGroceryItems.ts`: `useCreateGroceryItem`, `useUpdateGroceryItem`, `useDeleteGroceryItem`, `useToggleGroceryPurchased` (optimistic + rollback), `useClearPurchasedGrocery`, `useBulkAddGrocery`. All invalidate `queryKeys.grocery.all(userId)` on success/settle.
+
+### Manual grocery
+- `GroceryScreen` rewritten: pending & purchased sections with live counts, search, category filter, empty state, per-item edit/delete via dropdown, and confirm-dialog "Clear purchased" action.
+- `GroceryItemSheet`: mobile add/edit sheet — name, optional quantity, optional unit, category, optional notes. Disabled save while pending; toast errors.
+
+### Meal-plan generation
+- `GenerateGrocerySheet`: two-step flow (config → review). Defaults to visible Meal Plan week. Requires explicit user confirmation.
+- Ingredient normalization (`src/lib/grocery.ts`): lowercased, punctuation-stripped, safe depluralization ("tomatoes" → "tomato"). Match only on full normalized equality, so "cream" ≠ "sour cream", "chicken" ≠ "chicken stock", "flour" ≠ "gluten-free flour".
+- Unit vocabulary: alias table maps Spoonacular's short units to Fuudit enum; unknown units are preserved and flagged, never coerced.
+- Unit conversion supported only within families: g ↔ kg, ml ↔ l. tbsp/tsp/cup/piece are self-only. No cross-family assumptions (no cup→ml, no tbsp→ml, no piece→weight).
+- Pantry subtraction: `active` items only; consumed/discarded/deleted excluded. Subtract only when units convert safely. When they don't, keep the required amount and warn "Pantry uses a different unit — please check". When pantry quantity is unknown, warn "Check pantry quantity". When pantry fully covers requirement, row is included in review but excluded by default with an explanation.
+- Custom meals (no linked recipe) are skipped and the review notes how many were skipped.
+- Optional recipe ingredients toggled via checkbox in config step.
+
+### Review & duplicate handling
+- Review lets users: rename, edit quantity/unit, change category, remove, include previously excluded rows, cancel without writing.
+- Bulk insert on confirmation. Existing pending grocery items are merged only when ingredient identity and unit match under the same conservative rules; otherwise a new row is created. Purchased items are never merged.
+- Insertion carries `source: "meal_plan"`, `recipe_id`, and `meal_plan_entry_id` for traceability.
+
+### Grocery → Pantry
+- Purchased items expose a dropdown "Add to pantry" action.
+- `AddToPantrySheet` reuses `PantryItemSheet` (added `initialValues` prop) with name/quantity/unit/category/notes prefilled. Requires explicit confirmation. The grocery row is not modified after adding — user can still clear it manually. Button disabled while pending prevents accidental double taps.
+
+### Integrations
+- `MealPlanScreen`: header now hosts a "List" button opening the generation sheet with the visible week as the default range.
+- `HomeScreen`: "Build shopping list" quick-action now shows the real pending count from `useGroceryItems`.
+
+### Known limitations
+- Only g↔kg and ml↔l conversions are supported. Ingredient-density conversions (cup↔ml, tbsp↔g) are deliberately absent.
+- Category inference from ingredient names is heuristic; users can override in review or in edit.
+- No barcode/camera/receipt scanning (planned Slice 7).
+- No automatic pantry deduction on cook, no auto-generation on meal-plan change, no household sharing.
