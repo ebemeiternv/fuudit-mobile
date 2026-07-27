@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
@@ -7,8 +8,16 @@ import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
 import InstallRow from "@/pwa/InstallRow";
 import { BUILD_ID } from "@/pwa/buildId";
-import { Bell, Bookmark, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+import { Bell, Bookmark, Leaf, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+import {
+  HouseholdSheet,
+  DietarySheet,
+  NotificationsSheet,
+  PrivacySheet,
+  HelpSheet,
+} from "@/components/app/profile/ProfileSheets";
 
+type SheetKey = "household" | "dietary" | "notifications" | "privacy" | "help" | null;
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
@@ -17,6 +26,7 @@ const ProfileScreen = () => {
   const { data: saved = [] } = useSavedRecipes(user?.id);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [openSheet, setOpenSheet] = useState<SheetKey>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -26,15 +36,16 @@ const ProfileScreen = () => {
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "You";
   const householdSize = profile?.household_size ?? 1;
-  const dietary = profile?.dietary_preferences?.length
-    ? `${profile.dietary_preferences.length} selected`
-    : "Not set";
+  const dietCount =
+    (profile?.dietary_preferences?.length ?? 0) + (profile?.allergies?.length ?? 0);
+  const dietary = dietCount ? `${dietCount} selected` : "Not set";
 
   const rows: {
     Icon: typeof Users;
     label: string;
     value: string;
-    onClick?: () => void;
+    onClick: () => void;
+    hint?: string;
   }[] = [
     {
       Icon: Bookmark,
@@ -42,12 +53,36 @@ const ProfileScreen = () => {
       value: `${saved.length}`,
       onClick: () => navigate("/app/saved"),
     },
-    { Icon: Users, label: "Household", value: `${householdSize} ${householdSize === 1 ? "person" : "people"}` },
-    { Icon: Leaf, label: "Dietary preferences", value: dietary },
-    { Icon: Bell, label: "Notifications", value: "On" },
-    { Icon: Shield, label: "Privacy", value: "" },
-    { Icon: Settings, label: "Preferences", value: "" },
-    { Icon: HelpCircle, label: "Help & support", value: "" },
+    {
+      Icon: Users,
+      label: "Household",
+      value: `${householdSize} ${householdSize === 1 ? "person" : "people"}`,
+      onClick: () => setOpenSheet("household"),
+    },
+    {
+      Icon: Leaf,
+      label: "Dietary preferences",
+      value: dietary,
+      onClick: () => setOpenSheet("dietary"),
+    },
+    {
+      Icon: Bell,
+      label: "Notifications",
+      value: "Coming later",
+      onClick: () => setOpenSheet("notifications"),
+    },
+    {
+      Icon: Shield,
+      label: "Privacy",
+      value: "",
+      onClick: () => setOpenSheet("privacy"),
+    },
+    {
+      Icon: HelpCircle,
+      label: "Help & support",
+      value: "",
+      onClick: () => setOpenSheet("help"),
+    },
   ];
 
   return (
