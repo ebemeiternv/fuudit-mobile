@@ -1,5 +1,18 @@
 # Fuudit Changelog
 
+## PWA — Reliable update flow (iPhone Safari + installed PWA)
+
+- **Proactive update checks.** `registration.update()` now runs on initial load, on `visibilitychange` when the tab becomes visible, on `focus`, on `pageshow` (including bfcache restores common on iOS Safari), and on `online`. Checks are throttled to at most once per 60 s.
+- **Waiting-worker detection covers every path:** (a) already-waiting on boot, (b) `updatefound` → `installing` → `installed` while a controller exists, (c) waiting appearing after a foreground update check. First install (no existing controller) does not show the prompt.
+- **User-controlled activation preserved.** `skipWaiting: false` stays. The Update button posts `SKIP_WAITING`, listens for `controllerchange`, and reloads exactly once. Double-tap guarded; 8 s activation timeout; 6 s UI fallback pill becomes **Reload Fuudit** if activation stalls.
+- **Prompt visibility.** Positioned above bottom nav and safe-area inset (`bottom: calc(env(safe-area-inset-bottom) + 6rem)`, z-index 80), works in Safari browser and installed standalone, accessible button labels.
+- **Removed `workbox-window`** — replaced by a small native `ServiceWorkerRegistration` wrapper. Kill switch `?sw=off` preserved.
+- **HTML shell strategy simplified.** `index.html` is no longer precached and `navigateFallback` is removed. Navigations always go through the NetworkFirst runtime route (`fuudit-html`, 4 s timeout), which populates the offline cache on first successful load. This removes the class of bug where a stale active worker serves an old precached shell.
+- **Build identifier.** `Profile` now shows `Fuudit · Beta · Build <id>` where `<id>` is a base36 build timestamp injected via Vite `define` (`__BUILD_ID__`). No commit hash, no secrets.
+- Docs: `docs/PWA.md` updated with update-check triggers, throttling, iOS Safari vs standalone context separation, activation flow, HTML-shell decision, and troubleshooting.
+
+
+
 ## UX — Home: Recipe Discovery as primary entry point
 
 - Replaced the impact hero card on Home with a **Recommended for you** featured recipe pulled from the user's pantry via the existing `useRecipesByIngredients` hook (shared TanStack cache with Discover — no duplicate requests).
