@@ -255,14 +255,13 @@ export const recordAdded = async (input: AddedInput): Promise<void> => {
           )
         : null;
 
-    const expiryOffset =
-      input.expires_on && input.purchased_on
-        ? diffDays(input.purchased_on, new Date(input.expires_on))
-        : input.expires_on
-          ? diffDays(input.expires_on, new Date()) === null
-            ? null
-            : Math.max(1, -1 * (diffDays(input.expires_on, new Date()) ?? 0) * -1)
-          : null;
+    // Offset = days between (purchase or today) → expiry.
+    const expiryAnchor =
+      input.purchased_on ??
+      new Date(input.created_at).toISOString().slice(0, 10);
+    const expiryOffset = input.expires_on
+      ? diffDays(expiryAnchor, new Date(input.expires_on))
+      : null;
 
     const purchaseCount = (prev?.purchase_count ?? 0) + 1;
 
