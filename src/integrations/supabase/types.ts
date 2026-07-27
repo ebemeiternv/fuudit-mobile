@@ -170,6 +170,45 @@ export type Database = {
           },
         ]
       }
+      pantry_events: {
+        Row: {
+          category: string | null
+          created_at: string
+          event_type: Database["public"]["Enums"]["pantry_event_type"]
+          id: string
+          item_name: string
+          occurred_at: string
+          pantry_item_id: string | null
+          quantity: number | null
+          unit: Database["public"]["Enums"]["unit_type"] | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          event_type: Database["public"]["Enums"]["pantry_event_type"]
+          id?: string
+          item_name: string
+          occurred_at?: string
+          pantry_item_id?: string | null
+          quantity?: number | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["pantry_event_type"]
+          id?: string
+          item_name?: string
+          occurred_at?: string
+          pantry_item_id?: string | null
+          quantity?: number | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pantry_items: {
         Row: {
           category: string | null
@@ -338,6 +377,7 @@ export type Database = {
     Enums: {
       chef_message_role: "user" | "assistant" | "system"
       meal_type: "breakfast" | "lunch" | "dinner" | "snack"
+      pantry_event_type: "added" | "consumed" | "discarded" | "deleted"
       pantry_item_status: "active" | "consumed" | "discarded"
       pantry_location: "fridge" | "freezer" | "pantry" | "other"
       unit_type: "g" | "kg" | "ml" | "l" | "piece" | "tbsp" | "tsp" | "cup"
@@ -470,6 +510,7 @@ export const Constants = {
     Enums: {
       chef_message_role: ["user", "assistant", "system"],
       meal_type: ["breakfast", "lunch", "dinner", "snack"],
+      pantry_event_type: ["added", "consumed", "discarded", "deleted"],
       pantry_item_status: ["active", "consumed", "discarded"],
       pantry_location: ["fridge", "freezer", "pantry", "other"],
       unit_type: ["g", "kg", "ml", "l", "piece", "tbsp", "tsp", "cup"],

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
+import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
   ArrowRight,
@@ -9,8 +10,8 @@ import {
   AlertCircle,
   ChefHat,
   ShoppingBag,
-  TrendingDown,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import {
   daysUntilExpiry,
@@ -23,6 +24,7 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
+  const impact = usePantryImpact(user?.id);
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
@@ -50,18 +52,46 @@ const HomeScreen = () => {
       />
 
       <div className="px-5 space-y-5">
-        {/* Impact card */}
+        {/* Impact card — real, transparent metrics */}
         <div className="app-card p-5 bg-gradient-to-br from-[hsl(var(--app-primary))] to-[hsl(150_50%_28%)] text-white relative overflow-hidden">
           <Leaf className="absolute -right-3 -bottom-3 h-32 w-32 text-white/10" />
           <p className="text-xs uppercase tracking-widest text-white/80 font-semibold">Your impact</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-5xl font-bold tracking-tight">2.4</span>
-            <span className="text-white/80 font-medium">kg saved</span>
-          </div>
-          <p className="text-white/80 text-sm mt-1">this month · ~€18 & 6kg CO₂</p>
-          <div className="mt-4 flex items-center gap-2 text-sm font-medium text-white/95">
-            <TrendingDown className="h-4 w-4" /> 32% less waste vs last month
-          </div>
+          {impact.isLoading ? (
+            <p className="mt-3 text-white/85 text-sm">Crunching your kitchen numbers…</p>
+          ) : impact.consumed + impact.discarded === 0 ? (
+            <>
+              <div className="mt-2 flex items-baseline gap-2">
+                <Sparkles className="h-6 w-6 text-white/90" />
+                <span className="text-2xl font-bold tracking-tight">Let's get started</span>
+              </div>
+              <p className="text-white/85 text-sm mt-2 max-w-xs">
+                Add items to your pantry and mark them consumed or discarded — your real impact will show up here.
+              </p>
+              <Link
+                to="/app/pantry"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-white/15 hover:bg-white/25 rounded-full px-4 py-2 no-tap-highlight transition-colors"
+              >
+                Open pantry <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="mt-2 flex items-baseline gap-3">
+                <span className="text-5xl font-bold tracking-tight">{impact.consumed}</span>
+                <span className="text-white/85 font-medium">
+                  item{impact.consumed === 1 ? "" : "s"} used before expiry
+                </span>
+              </div>
+              <p className="text-white/80 text-sm mt-1">
+                {impact.discarded} discarded · {impact.active} in your pantry now
+              </p>
+              {impact.consumedPct !== null && (
+                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-white/95">
+                  <Leaf className="h-4 w-4" /> {impact.consumedPct}% of tracked items used, not wasted
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Expiring soon */}
