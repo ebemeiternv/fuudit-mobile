@@ -5,6 +5,8 @@ import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import { useMealPlan } from "@/hooks/queries/useMealPlan";
 import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
+import { useProductIntelligence } from "@/hooks/queries/useProductIntelligence";
+import { pickAmbientHint } from "@/lib/productIntelligence";
 import { todayLocalIso } from "@/lib/dates";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
