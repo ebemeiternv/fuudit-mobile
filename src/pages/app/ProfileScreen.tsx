@@ -148,6 +148,27 @@ const ProfileScreen = () => {
           Fuudit · Beta · Build {BUILD_ID}
         </p>
       </div>
+
+      <HouseholdSheet
+        open={openSheet === "household"}
+        onOpenChange={(o) => setOpenSheet(o ? "household" : null)}
+      />
+      <DietarySheet
+        open={openSheet === "dietary"}
+        onOpenChange={(o) => setOpenSheet(o ? "dietary" : null)}
+      />
+      <NotificationsSheet
+        open={openSheet === "notifications"}
+        onOpenChange={(o) => setOpenSheet(o ? "notifications" : null)}
+      />
+      <PrivacySheet
+        open={openSheet === "privacy"}
+        onOpenChange={(o) => setOpenSheet(o ? "privacy" : null)}
+      />
+      <HelpSheet
+        open={openSheet === "help"}
+        onOpenChange={(o) => setOpenSheet(o ? "help" : null)}
+      />
     </div>
   );
 };
