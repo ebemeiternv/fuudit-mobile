@@ -245,10 +245,12 @@ const BarcodeScanSheet = ({ open, onOpenChange, userId, onPrefill, onDuplicate }
         <div className="flex flex-col">
           <SheetHeader className="px-5 pt-5 pb-2 text-left">
             <SheetTitle className="text-xl font-bold text-[hsl(var(--app-foreground))]">
-              Scan product
+              {capability === "available" ? "Scan product" : "Enter barcode"}
             </SheetTitle>
             <SheetDescription className="text-[hsl(var(--app-muted))]">
-              Point the camera at the barcode on the package.
+              {capability === "available"
+                ? "Point the camera at the barcode on the package."
+                : "Type the number under the barcode to fetch product details."}
             </SheetDescription>
           </SheetHeader>
 
