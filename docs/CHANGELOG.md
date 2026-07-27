@@ -1,5 +1,55 @@
 # Fuudit Changelog
 
+## Slice 3 — Spoonacular Recipe Discovery, Detail & Saved Recipes
+
+### Schema
+- **No migration required.** Existing `recipes` table already has `source`, `source_id`, `title`, `image`, `servings`, `ready_minutes`, `ingredients jsonb`, `instructions text`, `data jsonb`, plus a unique index on `(source, source_id)` — enough to store nutrition, dietary tags, source URL, credits and license inside `data`. `saved_recipes` already has unique `(user_id, recipe_id)` and per-user RLS.
+
+### Spoonacular integration
+- New edge function `supabase/functions/spoonacular/index.ts` — the only place the API key is used.
+- Reads `SPOONACULAR_API_KEY` from server-side env. Missing key → HTTP 503 with `code: "missing_api_key"`; UI shows a stable "Recipe service unavailable" state.
+- Actions: `search` (`/recipes/complexSearch` with `addRecipeInformation=true`, `instructionsRequired=true`), `byIngredients` (`/recipes/findByIngredients` with `ignorePantry=true`, `ranking=1` to maximise pantry usage), `detail` (`/recipes/{id}/information?includeNutrition=true`).
+- Input validation on every request (action allowlist, integer id, string ingredient array capped at 20). Returns typed error codes for `rate_limited` (Spoonacular signals quota via 402), `unauthorized`, `not_found`, `upstream_error`.
+- The client never calls `api.spoonacular.com` directly; all traffic goes via `supabase.functions.invoke("spoonacular", …)`.
+
+### Client integration
+- `src/lib/spoonacular.ts`: shared types + `normalizeSpoonRecipe`, `pantryNamesToIngredients`, `pickSpoonDiet`, `pickSpoonIntolerances`. Robust to missing fields.
+- `src/lib/sanitizeHtml.ts`: DOMPurify wrapper (allowed tags: inline formatting + safe links only) — used for Spoonacular's `summary` and `instructions` HTML.
+- `src/lib/spoonErrors.ts`: maps thrown errors to user-friendly `title` / `description`.
+- `src/repositories/spoonacular.ts`: thin client over the edge function; typed error surface.
+- `src/repositories/recipes.ts`: `upsertFromSpoonacular` (idempotent on `(source, source_id)`), `getById`, `findBySourceId`.
+- `src/hooks/queries/useRecipes.ts`: `useRecipeSearch`, `useRecipesByIngredients`, `useRecipeDetail` (cache-first, upserts on miss), `useSaveSpoonacularRecipe` (fetches full detail and caches it before saving so saved recipes stay viewable offline). Duplicate-key errors (`23505`) on save are swallowed.
+
+### Recipe caching
+- Every recipe the user opens or saves is upserted into `public.recipes` keyed on `(source='spoonacular', source_id=<spoon id>)`. Duplicates are prevented by the existing unique index.
+- Cached rows include normalized ingredients (name, amount, unit, original) and structured steps under `data.steps`, plus `data.summary`, `data.diets`, `data.dishTypes`, `data.nutrition`, `data.sourceUrl`, `data.sourceName`, `data.creditsText`, `data.license`.
+- Saved recipes read from the local cache, so the saved list stays viewable when Spoonacular is unavailable.
+
+### Screens
+- **Rewrote** `src/pages/app/ChefScreen.tsx` — now a **Recipe Discovery** screen (no chat AI). Two modes: keyword `Search` and `From pantry` (chips seeded from active pantry items, expiring items marked and prioritised). Applies the user's profile `diet` + `intolerances`. Save/unsave from card. Attribution footer.
+- **New** `src/pages/app/RecipeDetailScreen.tsx` at `/app/recipes/:source/:id` (`source` is `local` or `spoon`). Hero image, prep time, servings, dietary tags, ingredients list, step-by-step instructions (falls back to sanitized `instructions` HTML when no steps), key nutrients per serving, "View original recipe" link, source credits + license.
+- **New** `src/pages/app/SavedRecipesScreen.tsx` at `/app/saved` — search by title, filter by dietary tag (only tags actually present are shown), unsave inline, empty/error/loading states.
+- `ProfileScreen.tsx` now shows real saved-recipe count and links to `/app/saved`.
+
+### Attribution & compliance
+- Spoonacular's TOS requires visible attribution to Spoonacular AND to the recipe's original source when provided (`sourceUrl`, `sourceName`, `creditsText`, `license`).
+- Discovery screen carries "Recipe data powered by Spoonacular." at the bottom.
+- Recipe detail shows the recipe's `creditsText` (or `sourceName`, or a Spoonacular fallback) plus the `license` string, and offers a prominent "View original recipe on {source}" outbound link with `rel="noopener noreferrer"`.
+- Any HTML from Spoonacular (`summary`, `instructions`) is sanitized with DOMPurify before rendering.
+
+### Known limitations & API-cost notes
+- Spoonacular free tier is 150 points/day; `complexSearch` costs 1 pt + 0.01 per result, `findByIngredients` is 1 pt/result, detail is 1 pt. Search + detail-on-save can burn quota quickly — mitigated by 5 min (list) / 30 min (detail) `staleTime`, cache-first detail lookup, and no automatic prefetching.
+- `findByIngredients` doesn't accept diet/intolerance params server-side; we apply diet/intolerances only to keyword search. Pantry-mode results are not filtered by the profile's dietary prefs — a known Spoonacular limitation.
+- Pantry ingredient names are sent as-is; brand-specific or verbose names may match poorly.
+- No offline write path: unsaving while offline will fail (recipes list remains readable from local cache).
+
+### Remaining Slice 4 work
+- Real AI Chef: conversational assistant grounded in pantry + saved recipes (`chef_conversations`, `chef_messages` tables already exist).
+- Meal plan assignment from a recipe.
+- Grocery list generation from a recipe's missing ingredients.
+
+
+
 ## Slice 2 — Pantry Events & Real Impact Data
 
 ### Database
