@@ -4,12 +4,13 @@ import {
   type PantryItemInsert,
   type PantryItemUpdate,
 } from "@/repositories/pantry";
+import type { PantryItemStatus } from "@/lib/pantry";
 import { queryKeys } from "./keys";
 
 export const usePantryItems = (userId: string | undefined) =>
   useQuery({
     queryKey: userId ? queryKeys.pantry.all(userId) : ["pantry", "anon"],
-    queryFn: () => pantryRepository.list(userId!),
+    queryFn: () => pantryRepository.listActive(userId!),
     enabled: !!userId,
   });
 
@@ -38,6 +39,15 @@ export const useDeletePantryItem = (userId: string | undefined) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => pantryRepository.remove(id),
+    onSuccess: () => userId && invalidate(qc, userId),
+  });
+};
+
+export const useSetPantryItemStatus = (userId: string | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: PantryItemStatus }) =>
+      pantryRepository.setStatus(id, status),
     onSuccess: () => userId && invalidate(qc, userId),
   });
 };
