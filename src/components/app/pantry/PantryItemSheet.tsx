@@ -38,6 +38,9 @@ import {
   type PantryLocation,
   type UnitType,
 } from "@/lib/pantry";
+import { Sparkles } from "lucide-react";
+import { useSmartDefaults } from "@/hooks/queries/useProductIntelligence";
+import { useAuth } from "@/hooks/useAuth";
 import type { PantryItem } from "@/repositories/pantry";
 
 const schema = z.object({
