@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
+import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
   ArrowRight,
@@ -9,8 +10,8 @@ import {
   AlertCircle,
   ChefHat,
   ShoppingBag,
-  TrendingDown,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import {
   daysUntilExpiry,
@@ -23,6 +24,7 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
+  const impact = usePantryImpact(user?.id);
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
