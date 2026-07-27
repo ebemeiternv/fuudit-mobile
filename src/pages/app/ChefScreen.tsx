@@ -59,11 +59,6 @@ const ChefScreen = () => {
     if (!activeId && conversations.length) setActiveId(conversations[0].id);
   }, [conversations, activeId]);
 
-  // Clear the inline error whenever the user switches conversations.
-  useEffect(() => {
-    setLastError((prev) => (prev && prev.convoId !== activeId ? null : prev));
-  }, [activeId]);
-
   const { data: messages = [], isLoading: loadingMessages } = useChefMessages(
     activeId ?? undefined,
   );
