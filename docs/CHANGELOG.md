@@ -1,5 +1,17 @@
 # Fuudit Changelog
 
+## UX — Home: Recipe Discovery as primary entry point
+
+- Replaced the impact hero card on Home with a **Recommended for you** featured recipe pulled from the user's pantry via the existing `useRecipesByIngredients` hook (shared TanStack cache with Discover — no duplicate requests).
+- Featured card reuses the existing `RecipeCard` design (image, title, used/missing counts) and is fully tappable to the recipe detail.
+- Empty-pantry state: "Your next favourite recipe starts here" with a primary action to open Pantry.
+- Discovery failure shows the standard `ErrorState` with retry instead of a blank card.
+- Added a **Browse all recipes →** link under the featured recipe, routing to `/app/discover`.
+- Added **Discover recipes** to Quick Actions (Sparkles icon, matches Discover screen).
+- No backend, repository, API, RLS, or schema changes. AI Chef Discover shortcut unchanged.
+
+
+
 ## Slice 4 — Conversational AI Chef
 
 ### Schema
