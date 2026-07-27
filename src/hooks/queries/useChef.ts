@@ -47,11 +47,24 @@ export const useDeleteChefConversation = (userId: string | undefined) => {
 export const useSendChefMessage = (userId: string | undefined) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, message }: { conversationId: string; message: string }) =>
-      chefRepository.sendMessage(conversationId, message),
+    // No AI SDK auto-retry — retry is user-driven only.
+    retry: false,
+    mutationFn: ({
+      conversationId,
+      message,
+      retry,
+    }: {
+      conversationId: string;
+      message: string;
+      retry?: boolean;
+    }) => chefRepository.sendMessage(conversationId, message, { retry }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.chef.messages(vars.conversationId) });
       if (userId) qc.invalidateQueries({ queryKey: queryKeys.chef.conversations(userId) });
+    },
+    // On error the server rolls back the user message, so refresh so the UI stays consistent.
+    onError: (_e, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.chef.messages(vars.conversationId) });
     },
   });
 };

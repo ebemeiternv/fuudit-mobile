@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, Plus, MessageSquare, Trash2, ChefHat, Compass } from "lucide-react";
+import { Sparkles, Send, Plus, MessageSquare, Trash2, ChefHat, Compass, RotateCcw, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
   useDeleteChefConversation,
   useSendChefMessage,
 } from "@/hooks/queries/useChef";
-import type { ChefMessage, ChefMessageData, ChefRecipeCard } from "@/repositories/chef";
+import { ChefError, type ChefErrorCode, type ChefMessage, type ChefMessageData, type ChefRecipeCard } from "@/repositories/chef";
 import { useSavedRecipes, useUnsaveRecipe } from "@/hooks/queries/useSavedRecipes";
 import { useSaveSpoonacularRecipe } from "@/hooks/queries/useRecipes";
 import RecipeCard from "@/components/app/recipes/RecipeCard";
@@ -59,6 +59,11 @@ const ChefScreen = () => {
     if (!activeId && conversations.length) setActiveId(conversations[0].id);
   }, [conversations, activeId]);
 
+  // Clear the inline error whenever the user switches conversations.
+  useEffect(() => {
+    setLastError((prev) => (prev && prev.convoId !== activeId ? null : prev));
+  }, [activeId]);
+
   const { data: messages = [], isLoading: loadingMessages } = useChefMessages(
     activeId ?? undefined,
   );
@@ -70,8 +75,16 @@ const ChefScreen = () => {
   const [input, setInput] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<{
+    code: ChefErrorCode;
+    message: string;
+    requestId?: string;
+    lastMessage: string;
+    convoId: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inFlightRef = useRef(false); // extra guard against double-taps
 
   // Autoscroll to newest message
   useEffect(() => {
@@ -92,10 +105,11 @@ const ChefScreen = () => {
     }
   };
 
-  const submit = async (text?: string) => {
+  const submit = async (text?: string, opts?: { retry?: boolean }) => {
     if (!userId) return;
     const msg = (text ?? input).trim();
-    if (!msg || send.isPending) return;
+    if (!msg) return;
+    if (send.isPending || inFlightRef.current) return;
 
     let convoId = activeId;
     if (!convoId) {
@@ -108,18 +122,40 @@ const ChefScreen = () => {
         return;
       }
     }
-    setInput("");
+
+    inFlightRef.current = true;
+    const previousInput = input;
+    // Only clear the composer when this is a fresh send, not a retry — nothing was typed then.
+    if (!opts?.retry) setInput("");
+    setLastError(null);
+
     try {
-      await send.mutateAsync({ conversationId: convoId!, message: msg });
-    } catch (e: any) {
-      const code = e?.message ?? "";
-      const msg =
-        e?.context?.status === 429 || /rate_limited/i.test(code)
-          ? "The AI is a bit busy — try again in a moment."
-          : e?.context?.status === 402
-          ? "AI credits ran out. Please add credits to continue."
-          : "AI Chef couldn't respond. Please try again.";
-      toast({ title: msg, variant: "destructive" });
+      await send.mutateAsync({
+        conversationId: convoId!,
+        message: msg,
+        retry: opts?.retry === true,
+      });
+    } catch (e: unknown) {
+      const err = e instanceof ChefError ? e : null;
+      const code: ChefErrorCode = err?.code ?? "unknown_error";
+      const message = err?.message ?? "AI Chef couldn't respond. Please try again.";
+      // On failure the server rolled back the user message. Restore the composer
+      // text so the user doesn't lose what they typed, and surface an inline
+      // error card in the conversation with a "Try again" action.
+      if (!opts?.retry) setInput(previousInput);
+      setLastError({
+        code,
+        message,
+        requestId: err?.requestId,
+        lastMessage: msg,
+        convoId: convoId!,
+      });
+      // Only 429 gets a toast — everything else is shown inline where the answer would have been.
+      if (code === "gateway_rate_limited") {
+        toast({ title: message, variant: "destructive" });
+      }
+    } finally {
+      inFlightRef.current = false;
     }
   };
 
