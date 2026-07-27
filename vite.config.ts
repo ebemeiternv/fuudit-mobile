@@ -5,11 +5,18 @@ import { componentTagger } from "lovable-tagger";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Short, non-sensitive build identifier for tester version confirmation.
+// Uses a base36 timestamp — no commit hash, no secrets.
+const BUILD_ID = Date.now().toString(36);
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+  },
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
   },
   plugins: [
     react(),
@@ -65,9 +72,10 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /\/functions\/v1\//],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // Single navigation-shell strategy: NetworkFirst runtime route below
+        // owns HTML. index.html is intentionally NOT precached so a stale
+        // active worker cannot serve an old shell from precache.
+        globPatterns: ["**/*.{js,css,ico,png,svg,woff,woff2}"],
         runtimeCaching: [
           {
             // HTML navigations — always try network first
