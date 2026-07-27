@@ -34,6 +34,8 @@ const HomeScreen = () => {
   const todayIso = todayLocalIso();
   const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
   const { data: groceryItems = [] } = useGroceryItems(user?.id);
+  const { data: intelligence = [] } = useProductIntelligence(user?.id);
+  const ambientHint = pickAmbientHint(intelligence);
   const pendingGrocery = groceryItems.filter((i) => !i.checked).length;
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
