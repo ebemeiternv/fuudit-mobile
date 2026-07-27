@@ -79,10 +79,14 @@ const ProfileScreen = () => {
         </div>
 
         <div className="app-card divide-y divide-[hsl(var(--app-border))]">
-          {rows.map(({ Icon, label, value }) => (
-            <button key={label} className="flex items-center gap-3 p-4 w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors">
+          {rows.map(({ Icon, label, value, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="flex items-center gap-3 p-4 w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors"
+            >
               <div className="h-9 w-9 rounded-xl bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] grid place-items-center">
-                <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                <Icon className="h-[18px] w-[18px]" />
               </div>
               <span className="flex-1 font-medium text-[hsl(var(--app-foreground))]">{label}</span>
               {value && <span className="text-sm text-[hsl(var(--app-muted))]">{value}</span>}
