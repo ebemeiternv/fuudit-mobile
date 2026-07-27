@@ -87,6 +87,7 @@ const PantryScreen = () => {
   const updateMut = useUpdatePantryItem(userId);
   const deleteMut = useDeletePantryItem(userId);
   const statusMut = useSetPantryItemStatus(userId);
+  const { data: intelligence = [] } = useProductIntelligence(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
