@@ -10,6 +10,7 @@ import {
   Pencil,
   SlidersHorizontal,
   History as HistoryIcon,
+  ScanLine,
 } from "lucide-react";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,9 @@ import LoadingState from "@/components/app/states/LoadingState";
 import EmptyState from "@/components/app/states/EmptyState";
 import ErrorState from "@/components/app/states/ErrorState";
 import PantryItemSheet from "@/components/app/pantry/PantryItemSheet";
+import BarcodeScanSheet, {
+  type ScannedInitialValues,
+} from "@/components/app/pantry/BarcodeScanSheet";
 import {
   CATEGORIES,
   LOCATIONS,
