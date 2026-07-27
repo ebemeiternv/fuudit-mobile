@@ -19,7 +19,10 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string
+          message_count: number
           status: string
+          summary: string | null
+          summary_updated_at: string | null
           title: string | null
           updated_at: string
           user_id: string
@@ -28,7 +31,10 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          message_count?: number
           status?: string
+          summary?: string | null
+          summary_updated_at?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
@@ -37,7 +43,10 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string
+          message_count?: number
           status?: string
+          summary?: string | null
+          summary_updated_at?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string
@@ -49,6 +58,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          data: Json
           id: string
           role: Database["public"]["Enums"]["chef_message_role"]
           user_id: string
@@ -57,6 +67,7 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string
+          data?: Json
           id?: string
           role: Database["public"]["Enums"]["chef_message_role"]
           user_id: string
@@ -65,6 +76,7 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string
+          data?: Json
           id?: string
           role?: Database["public"]["Enums"]["chef_message_role"]
           user_id?: string
