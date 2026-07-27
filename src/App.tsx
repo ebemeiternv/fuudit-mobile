@@ -50,6 +50,8 @@ const App = () => (
               <Route path="meal-plan" element={<MealPlanScreen />} />
               <Route path="grocery" element={<GroceryScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
+              <Route path="saved" element={<SavedRecipesScreen />} />
+              <Route path="recipes/:source/:id" element={<RecipeDetailScreen />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
