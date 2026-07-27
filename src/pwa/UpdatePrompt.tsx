@@ -1,31 +1,73 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { setUpdateHandler } from "./registerSW";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
+type Activate = () => Promise<void>;
+
 const UpdatePrompt = () => {
-  const [reload, setReload] = useState<null | (() => void)>(null);
+  const [activate, setActivate] = useState<Activate | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [fallback, setFallback] = useState(false);
+  const clickedRef = useRef(false);
 
   useEffect(() => {
-    setUpdateHandler((doReload) => setReload(() => doReload));
+    setUpdateHandler((doActivate) => {
+      // Only set once — guards against duplicate prompts.
+      setActivate((prev) => prev ?? (() => doActivate()));
+    });
     return () => setUpdateHandler(null);
   }, []);
 
-  if (!reload) return null;
+  if (!activate) return null;
+
+  const handleClick = async () => {
+    if (clickedRef.current) return;
+    clickedRef.current = true;
+    setBusy(true);
+
+    // If activation stalls (e.g. no controllerchange on iOS), offer a hard reload.
+    const fallbackTimer = window.setTimeout(() => setFallback(true), 6000);
+
+    try {
+      await activate();
+    } catch {
+      setFallback(true);
+    } finally {
+      window.clearTimeout(fallbackTimer);
+    }
+  };
+
+  const handleHardReload = () => {
+    window.location.reload();
+  };
 
   return (
     <div
       role="status"
-      className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-2xl bg-[hsl(var(--app-foreground))] text-white shadow-xl flex items-center gap-3"
+      aria-live="polite"
+      className="fixed left-1/2 -translate-x-1/2 z-[80] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-2xl bg-[hsl(var(--app-foreground))] text-white shadow-xl flex items-center gap-3"
+      style={{
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 6rem)",
+      }}
     >
-      <RefreshCw className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span className="text-sm flex-1">A new version of Fuudit is ready.</span>
+      <RefreshCw
+        className={`h-4 w-4 shrink-0 ${busy ? "animate-spin" : ""}`}
+        aria-hidden="true"
+      />
+      <span className="text-sm flex-1">
+        {fallback
+          ? "Almost there — reload to finish updating."
+          : "A new version of Fuudit is ready."}
+      </span>
       <Button
         size="sm"
-        onClick={reload}
-        className="h-8 rounded-lg bg-white text-[hsl(var(--app-foreground))] hover:bg-white/90"
+        onClick={fallback ? handleHardReload : handleClick}
+        disabled={busy && !fallback}
+        aria-label={fallback ? "Reload Fuudit" : "Update Fuudit to the latest version"}
+        className="h-8 rounded-lg bg-white text-[hsl(var(--app-foreground))] hover:bg-white/90 disabled:opacity-70"
       >
-        Update
+        {fallback ? "Reload Fuudit" : busy ? "Updating…" : "Update"}
       </Button>
     </div>
   );
