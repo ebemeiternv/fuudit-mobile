@@ -17,10 +17,11 @@ const MobileAvailability = () => (
           Use Fuudit on your phone today
         </h2>
         <p className="text-nordic-600 max-w-xl mx-auto text-balance">
-          Fuudit works on mobile web right now — open it in your browser and
-          you're set. Installable iPhone and Android experiences are coming
-          soon.
+          Use Fuudit in your browser or add it to your phone's home screen for
+          a fast, app-like experience. Native iPhone and Android apps are on
+          our roadmap.
         </p>
+
       </div>
     </div>
   </section>

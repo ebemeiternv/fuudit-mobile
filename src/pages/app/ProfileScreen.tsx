@@ -5,7 +5,9 @@ import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import { useSavedRecipes } from "@/hooks/queries/useSavedRecipes";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
+import InstallRow from "@/pwa/InstallRow";
 import { Bell, Bookmark, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
@@ -79,6 +81,8 @@ const ProfileScreen = () => {
         </div>
 
         <div className="app-card divide-y divide-[hsl(var(--app-border))]">
+          <InstallRow />
+
           {rows.map(({ Icon, label, value, onClick }) => (
             <button
               key={label}

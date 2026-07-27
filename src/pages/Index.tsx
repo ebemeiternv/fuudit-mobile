@@ -13,6 +13,8 @@ import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import CookieConsent from "@/components/CookieConsent";
+import { LandingInstallPill } from "@/pwa/InstallRow";
+
 
 const Index = () => {
   return (
@@ -34,7 +36,9 @@ const Index = () => {
       </main>
       <Footer />
       <CookieConsent />
+      <LandingInstallPill />
     </div>
+
   );
 };
 
