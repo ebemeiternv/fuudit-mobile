@@ -3,6 +3,7 @@ export const queryKeys = {
   profile: (userId: string) => ["profile", userId] as const,
   pantry: {
     all: (userId: string) => ["pantry", userId] as const,
+    events: (userId: string) => ["pantry", "events", userId] as const,
   },
   mealPlan: {
     range: (userId: string, from: string, to: string) =>
