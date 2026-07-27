@@ -48,6 +48,7 @@ const App = () => (
               <Route path="pantry" element={<PantryScreen />} />
               <Route path="pantry/history" element={<PantryHistoryScreen />} />
               <Route path="chef" element={<ChefScreen />} />
+              <Route path="discover" element={<DiscoverScreen />} />
               <Route path="meal-plan" element={<MealPlanScreen />} />
               <Route path="grocery" element={<GroceryScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
