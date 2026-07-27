@@ -181,7 +181,7 @@ const AddToMealPlanSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-[hsl(var(--app-border))] bg-white p-0 max-h-[92vh] overflow-y-auto"
+        className="rounded-t-3xl border-t border-[hsl(var(--app-border))] bg-white p-0 max-h-[92dvh] overflow-y-auto"
       >
         <SheetHeader className="px-5 pt-5 pb-2 text-left">
           <SheetTitle className="text-xl font-bold text-[hsl(var(--app-foreground))]">
