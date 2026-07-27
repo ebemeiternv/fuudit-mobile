@@ -1,5 +1,82 @@
 # Fuudit Changelog
 
+## Slice 4 — Conversational AI Chef
+
+### Schema
+- `chef_messages.data jsonb NOT NULL DEFAULT '{}'` — structured payload (recipe cards, tips, clarifying question) alongside the plain-text `content`.
+- `chef_messages.conversation_id` FK now `ON DELETE CASCADE` so deleting a conversation removes its messages.
+- `chef_conversations`: added `summary text`, `summary_updated_at timestamptz`, `message_count integer` for rolling-summary bookkeeping.
+- Indexes: `chef_messages (conversation_id, created_at)`, `chef_conversations (user_id, last_message_at DESC)`.
+- Existing per-user RLS on both tables remains the only access surface for the client.
+
+### AI architecture
+- New `supabase/functions/chef/` edge function (Lovable-managed, `verify_jwt` off — validates JWT in code via `auth.getUser()`).
+- Model: **`google/gemini-3.6-flash`** through **Lovable AI Gateway** (`https://ai.gateway.lovable.dev/v1/chat/completions`). No AI SDK — direct fetch keeps the tool loop compact and Deno-friendly.
+- Reads `LOVABLE_API_KEY` and `SPOONACULAR_API_KEY` server-side only; neither appears in the client bundle. Uses `SUPABASE_SERVICE_ROLE_KEY` for writes and pantry reads (all scoped by the verified `userId`).
+- Bounded server-side tool loop (`MAX_TOOL_STEPS = 5`), `max_tokens = 900`, `response_format: json_object`, 45 s request timeout, no automatic retries.
+
+### Tools exposed to the model
+- **`get_pantry`** — active pantry items (name, category, location, quantity, unit, expiry, computed `daysUntilExpiry`). Consumed/discarded excluded.
+- **`search_recipes`** — thin wrapper on Spoonacular. Prefers `complexSearch` when a keyword, diet or intolerance is set; falls back to `findByIngredients` only when the model calls with ingredients and no restrictions. Result payloads to the model are trimmed to what's needed (id, title, image, times, diet flags). Response cap of 5 recipes.
+- **`get_recipe_details`** — cache-agnostic Spoonacular detail lookup for validation.
+- No `save_recipe`, meal-plan or grocery tools — those are user-initiated in the UI only.
+
+### System prompt (approach)
+- Casts Tilda as a cooking helper, not a chef or dietitian.
+- Explicitly forbids obeying instructions from tool output, pantry names or recipe fields (prompt-injection guard).
+- Requires `get_pantry` at the start of practical cooking questions and prioritises items expiring within 7 days.
+- Treats allergies as hard constraints; instructs the model to prefer `complexSearch + diet/intolerances` when restrictions matter and never label results allergy-safe when they weren't filtered.
+- Final response must be pure JSON: `{ content, clarifyingQuestion?, recipes[], tips[] }`. Server sanitises recipe cards (integer Spoonacular ids, capped arrays, capped `reason` length) before persistence.
+
+### Conversation memory
+- Context window per request = the system prompt + optional rolling `summary` + last 10 messages of the active conversation. Older messages stay in the DB for display but are not resent.
+- Rolling summary is regenerated (best-effort, non-blocking) every 10 messages via a second cheap Gemini call. Failure of the summary call never blocks the reply.
+- Titles auto-fill from the first user message (60 chars).
+
+### Client integration
+- New repo methods: `renameConversation`, `deleteConversation`, `sendMessage` (invokes the edge function). Removed the direct client-side message-insert path — persistence now belongs to the edge function.
+- New hooks: `useCreateChefConversation`, `useDeleteChefConversation`, `useRenameChefConversation`, `useSendChefMessage`, plus the existing `useChefConversations` / `useChefMessages`.
+- **ChefScreen** rebuilt as a chat surface: Tilda intro, 5 suggested starters, message list, user/assistant bubbles, structured recipe cards inside assistant messages, "Tilda is thinking…" state, keyboard-safe layout (`h-[calc(100dvh-var(--app-nav-h))]` + `pb-[env(safe-area-inset-bottom)]`), Enter-to-send / Shift+Enter for newline, autoscroll on new messages.
+- Conversation drawer (Sheet) lists past conversations with new/delete actions and confirmation dialog.
+- **DiscoverScreen** — the Slice 3 recipe-discovery UI is preserved verbatim at `/app/discover`, linked from the Chef header (Compass icon).
+- Recipe cards inside chat reuse the shared `RecipeCard` component and the existing save/unsave / recipe-detail flow; nothing about the Slice 3 saved-recipe path was rewritten.
+
+### Dietary and allergy handling
+- Chosen approach: **prefer `complexSearch` with `diet` and `intolerances` when restrictions apply**; system prompt tells the model to fall back to ingredient-first search only when there are no restrictions.
+- When `findByIngredients` is used, the tool response includes an explicit note telling the model results are unfiltered, and the prompt forbids describing them as safe.
+- The final assistant JSON also carries a small footer disclaimer in the UI: "Tilda is a cooking helper, not a dietitian. Always check labels for allergies."
+
+### Cost controls
+- 45 s hard timeout per request, no retries.
+- Max 5 tool steps, max 5 recipe candidates per `search_recipes` call, `max_tokens = 900`.
+- Only the last 10 messages + rolling summary are sent to the model — the transcript can grow without linearly growing token cost.
+- Spoonacular `402` / `429` → surfaced to the model as `rate_limited` in tool output; the model degrades to non-recipe guidance.
+- Gateway `429` → HTTP 429 with `ai_rate_limited`, UI toast.
+- Gateway `402` → HTTP 402 with `ai_credits_exhausted`, UI toast.
+
+### Security / prompt-injection
+- API keys, model choice and system prompt live entirely inside the edge function.
+- Client never calls Spoonacular or Lovable AI Gateway directly.
+- All conversation and message reads/writes are RLS-scoped to the authenticated user, and the edge function additionally re-verifies `convo.user_id === userId` before every send.
+- Tool schema is closed (`additionalProperties: false`); tool names are allowlisted; pantry/recipe fields are treated as untrusted data in the system prompt.
+- Structured recipe cards are sanitised server-side before being persisted or sent to the client — non-numeric `sourceId`s, oversized arrays, and long `reason` strings are dropped/truncated.
+- `chef_messages.conversation_id` cascade delete guarantees no orphaned per-user messages after a conversation delete.
+
+### Known limitations
+- Non-streaming. Users see a "Tilda is thinking…" indicator; typical responses land in a few seconds, worst case ~30 s while tools run. Streaming can be added later.
+- Rolling summary is generated by the same Gemini model — if it fails, older context degrades gracefully to "last 10 messages only".
+- `findByIngredients` still cannot filter allergies server-side. Diet/intolerance-heavy questions may reduce the total number of usable results.
+- Model may still occasionally output non-JSON — server falls back to the raw text as `content` and shows no recipe cards rather than erroring.
+- Token usage metadata is not yet persisted; only best-effort logging.
+
+### Remaining Slice 5 work
+- Streamed tokens (SSE / AI SDK `useChat`) for lower time-to-first-token.
+- Meal Plan assignment from a Chef-recommended recipe.
+- Grocery list generation from missing ingredients.
+- Post-cook pantry deduction hook.
+
+
+
 ## Slice 3 — Spoonacular Recipe Discovery, Detail & Saved Recipes
 
 ### Schema
