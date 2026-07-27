@@ -394,6 +394,61 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
               </div>
             </div>
 
+            {isNew && defaults && (defaults.suggested_expires_on || defaults.confidence !== "none") && (
+              <div className="rounded-2xl border border-[hsl(var(--app-border))] bg-[hsl(var(--app-subtle))] p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[hsl(var(--app-foreground))]">
+                  <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--app-primary))]" />
+                  {defaults.expiry_source === "learned"
+                    ? "You usually keep this fresh for a while — try one of these:"
+                    : defaults.expiry_source === "category"
+                      ? "Common shelf life for this category:"
+                      : "Quick expiry:"}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {defaults.suggested_expires_on && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set("expires_on", defaults.suggested_expires_on!)
+                      }
+                      className={cn(
+                        "px-3 h-8 rounded-full text-xs font-medium border transition-colors no-tap-highlight",
+                        form.expires_on === defaults.suggested_expires_on
+                          ? "bg-[hsl(var(--app-primary))] text-white border-[hsl(var(--app-primary))]"
+                          : "bg-white text-[hsl(var(--app-foreground))] border-[hsl(var(--app-border))]",
+                      )}
+                    >
+                      {defaults.expiry_offset_days} day{defaults.expiry_offset_days === 1 ? "" : "s"}
+                    </button>
+                  )}
+                  {[3, 7, 14].map((n) => {
+                    const iso = (() => {
+                      const d = new Date();
+                      d.setHours(0, 0, 0, 0);
+                      d.setDate(d.getDate() + n);
+                      return toLocalDateString(d);
+                    })();
+                    if (iso === defaults.suggested_expires_on) return null;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => set("expires_on", iso)}
+                        className={cn(
+                          "px-3 h-8 rounded-full text-xs font-medium border transition-colors no-tap-highlight",
+                          form.expires_on === iso
+                            ? "bg-[hsl(var(--app-primary))] text-white border-[hsl(var(--app-primary))]"
+                            : "bg-white text-[hsl(var(--app-foreground))] border-[hsl(var(--app-border))]",
+                        )}
+                      >
+                        +{n} days
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Expiry date</Label>
