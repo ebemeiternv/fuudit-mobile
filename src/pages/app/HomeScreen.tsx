@@ -1,29 +1,40 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
+import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import ScreenHeader from "@/components/app/ScreenHeader";
-import { ArrowRight, Leaf, AlertCircle, ChefHat, ShoppingBag, TrendingDown } from "lucide-react";
+import {
+  ArrowRight,
+  Leaf,
+  AlertCircle,
+  ChefHat,
+  ShoppingBag,
+  TrendingDown,
+  Plus,
+} from "lucide-react";
+import {
+  daysUntilExpiry,
+  expiryBucket,
+  expiryLabel,
+  expiryTone,
+} from "@/lib/pantry";
 
 const HomeScreen = () => {
   const { user } = useAuth();
-  const [name, setName] = useState<string>("");
+  const { data: profile } = useProfile(user?.id);
+  const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle().then(({ data }) => {
-      setName(data?.display_name || user.email?.split("@")[0] || "");
-    });
-  }, [user]);
-
+  const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const expiring = [
-    { name: "Spinach", days: 1, color: "danger" },
-    { name: "Greek yogurt", days: 2, color: "warning" },
-    { name: "Chicken breast", days: 3, color: "warning" },
-  ];
+  const expiring = pantry
+    .filter((i) => {
+      const d = daysUntilExpiry(i.expires_on);
+      return d !== null && d <= 7;
+    })
+    .sort((a, b) => (daysUntilExpiry(a.expires_on) ?? 999) - (daysUntilExpiry(b.expires_on) ?? 999))
+    .slice(0, 5);
 
   return (
     <div>
@@ -57,30 +68,65 @@ const HomeScreen = () => {
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
             <h2 className="text-lg font-bold text-[hsl(var(--app-foreground))]">Use these soon</h2>
-            <Link to="/app/pantry" className="text-sm font-semibold text-[hsl(var(--app-primary))] flex items-center gap-1 no-tap-highlight">
+            <Link
+              to="/app/pantry"
+              className="text-sm font-semibold text-[hsl(var(--app-primary))] flex items-center gap-1 no-tap-highlight"
+            >
               Pantry <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="app-card divide-y divide-[hsl(var(--app-border))]">
-            {expiring.map((item) => (
-              <div key={item.name} className="flex items-center gap-3 p-4">
-                <div className={`h-10 w-10 rounded-xl grid place-items-center ${
-                  item.color === "danger"
-                    ? "bg-[hsl(var(--app-accent-berry-soft))] text-[hsl(var(--app-danger))]"
-                    : "bg-[hsl(var(--app-accent-warm-soft))] text-[hsl(var(--app-accent-warm))]"
-                }`}>
-                  <AlertCircle className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[hsl(var(--app-foreground))]">{item.name}</p>
-                  <p className="text-xs text-[hsl(var(--app-muted))]">Expires in {item.days} {item.days === 1 ? "day" : "days"}</p>
-                </div>
-                <button className="text-xs font-semibold text-[hsl(var(--app-primary))] px-3 py-1.5 rounded-full bg-[hsl(var(--app-primary-soft))] no-tap-highlight active:scale-95 transition-transform">
-                  Recipe
-                </button>
+
+          {pantryLoading ? (
+            <div className="app-card p-6 text-center text-sm text-[hsl(var(--app-muted))]">
+              Loading…
+            </div>
+          ) : expiring.length === 0 ? (
+            <Link
+              to="/app/pantry"
+              className="app-card p-5 flex items-center gap-3 no-tap-highlight active:scale-[0.99] transition-transform"
+            >
+              <div className="h-11 w-11 rounded-xl bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] grid place-items-center">
+                <Plus className="h-5 w-5" />
               </div>
-            ))}
-          </div>
+              <div className="flex-1">
+                <p className="font-semibold text-[hsl(var(--app-foreground))]">
+                  {pantry.length === 0 ? "Add your first pantry item" : "Nothing expiring soon"}
+                </p>
+                <p className="text-xs text-[hsl(var(--app-muted))]">
+                  {pantry.length === 0
+                    ? "Track what's in your kitchen to reduce waste."
+                    : "Great — your fridge is in good shape."}
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))]" />
+            </Link>
+          ) : (
+            <div className="app-card divide-y divide-[hsl(var(--app-border))]">
+              {expiring.map((item) => {
+                const tone = expiryTone(expiryBucket(item.expires_on));
+                return (
+                  <Link
+                    key={item.id}
+                    to="/app/pantry"
+                    className="flex items-center gap-3 p-4 no-tap-highlight active:bg-[hsl(var(--app-subtle))]"
+                  >
+                    <div className={`h-10 w-10 rounded-xl grid place-items-center ${tone.icon}`}>
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-[hsl(var(--app-foreground))] truncate">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--app-muted))]">
+                        {expiryLabel(item.expires_on)}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))]" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Quick actions */}
