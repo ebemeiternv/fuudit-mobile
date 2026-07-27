@@ -1,5 +1,41 @@
 # Fuudit Changelog
 
+## AI Chef — Reliability fix
+
+**Symptom.** Users often saw *"Sorry — I couldn't put a suggestion together just now. Try rephrasing your request."* even for simple prompts. Gateway logs showed every request returning HTTP 200 with healthy token usage — the model was answering. The bug was in the edge function.
+
+**Root causes.**
+1. **Tool-loop budget broke a batch mid-way.** `MAX_TOOL_STEPS = 5` counted individual tool calls, and `if (toolStepsUsed >= MAX_TOOL_STEPS) break;` broke out of the inner `for (const call of toolCalls)` loop. When the model emitted 3 parallel calls near the cap, we pushed the assistant message carrying **all 3** `tool_call` ids but only pushed 2 `tool` responses. The next turn hit the OpenAI-compatible protocol's unresolved-tool_call_id path, so Gemini returned an assistant with `content: null` (or minimal filler).
+2. **`response_format: { type: "json_object" }` + `tools` on Gemini via OpenRouter** intermittently returns empty content on the final "no more tools" step.
+3. **The fallback string was persisted** as a real assistant message, so it reappeared on reload and there was no retry action.
+
+**Fixes (server — `supabase/functions/chef/index.ts` rewritten).**
+- Tool-loop budget counts **iterations, not tool calls**. Every batch of `tool_calls` from a single step is resolved fully before the next iteration.
+- **Final pass forces `tool_choice: "none"`** so the last permitted turn MUST return text/JSON — no more "one more tool call" empty-content path.
+- **Removed `response_format: json_object`.** The system prompt still mandates strict JSON, and a tolerant `extractJson()` handles markdown fences and prose-wrapped JSON.
+- **Text-only reply fallback.** If the model returns plain prose instead of JSON, we accept that as the assistant answer rather than surfacing the generic error.
+- **Typed error taxonomy** with `requestId` per request: `unauthenticated`, `invalid_request`, `conversation_not_found`, `model_unavailable`, `gateway_unauthorized`, `gateway_rate_limited`, `gateway_credits_exhausted`, `gateway_timeout`, `gateway_upstream`, `invalid_model_response`, `message_persistence_failed`, `unknown_error`. Correct HTTP status per code (402 for credits, 429 for rate limit, 504 for timeout, etc.).
+- **Structured single-line JSON logs** keyed by `requestId` and `stage` — request received, tool invoked/failed, gateway status, completed. Only non-sensitive metadata (truncated user id, iteration count, tools invoked, duration, recipe count). Never prompts, pantry contents, or recipe payloads.
+- **User-message rollback on failure.** If generation fails after the user message was persisted, we delete it, so the client can retry with the same text without producing a duplicate.
+- **Resilient recipe sanitisation.** Accepts `sourceId` as string OR number; keeps otherwise-useful cards when optional fields are missing; validates that `sourceId` is numeric (blocks hallucinated ids).
+- **Explicit 45 s timeout** with `AbortController` maps cleanly to `gateway_timeout`.
+- **Model confirmed:** `google/gemini-3.6-flash` (current-generation Flash) — verified live in `ai_gateway_logs` (recent chat_completions calls succeeded 200 with 4–5 s latency).
+
+**Fixes (client — `ChefScreen.tsx`, `useChef.ts`, `chef` repo).**
+- Introduced a typed `ChefError` (code, message, requestId) parsed from the edge function's JSON error body.
+- **Inline error card** replaces the generic toast: shows the mapped user message, the shortened `requestId` for support, **Try again**, **Dismiss**, and **Discover recipes** shortcut. Rate-limit errors additionally get a toast.
+- **User-driven retry only.** The mutation has `retry: false` (no TanStack auto-retry). Retry sends `retry: true` so the server does not re-insert the user message.
+- **Composer text is preserved** on failure so nothing typed is lost; on success it clears as before.
+- **Double-tap guard** via an `inFlightRef` ref in addition to `send.isPending`.
+- Inline error is scoped to the active conversation and cleared automatically when switching threads.
+- Only `pantry_events`-style append-only tables were touched: **no** schema, RLS, storage, or auth changes.
+
+**How to correlate a failure.** Every response — success or error — carries a `requestId` (UUID). The Profile screen still shows the Build id. For support, quote both.
+
+
+
+
+
 ## PWA — Reliable update flow (iPhone Safari + installed PWA)
 
 - **Proactive update checks.** `registration.update()` now runs on initial load, on `visibilitychange` when the tab becomes visible, on `focus`, on `pageshow` (including bfcache restores common on iOS Safari), and on `online`. Checks are throttled to at most once per 60 s.

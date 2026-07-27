@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, Plus, MessageSquare, Trash2, ChefHat, Compass } from "lucide-react";
+import { Sparkles, Send, Plus, MessageSquare, Trash2, ChefHat, Compass, RotateCcw, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
   useDeleteChefConversation,
   useSendChefMessage,
 } from "@/hooks/queries/useChef";
-import type { ChefMessage, ChefMessageData, ChefRecipeCard } from "@/repositories/chef";
+import { ChefError, type ChefErrorCode, type ChefMessage, type ChefMessageData, type ChefRecipeCard } from "@/repositories/chef";
 import { useSavedRecipes, useUnsaveRecipe } from "@/hooks/queries/useSavedRecipes";
 import { useSaveSpoonacularRecipe } from "@/hooks/queries/useRecipes";
 import RecipeCard from "@/components/app/recipes/RecipeCard";
@@ -70,15 +70,28 @@ const ChefScreen = () => {
   const [input, setInput] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<{
+    code: ChefErrorCode;
+    message: string;
+    requestId?: string;
+    lastMessage: string;
+    convoId: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inFlightRef = useRef(false); // extra guard against double-taps
+
+  // Clear the inline error whenever the user switches conversations.
+  useEffect(() => {
+    setLastError((prev) => (prev && prev.convoId !== activeId ? null : prev));
+  }, [activeId]);
 
   // Autoscroll to newest message
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, send.isPending]);
+  }, [messages, send.isPending, lastError]);
 
   const startNew = async () => {
     if (!userId) return;
@@ -92,10 +105,11 @@ const ChefScreen = () => {
     }
   };
 
-  const submit = async (text?: string) => {
+  const submit = async (text?: string, opts?: { retry?: boolean }) => {
     if (!userId) return;
     const msg = (text ?? input).trim();
-    if (!msg || send.isPending) return;
+    if (!msg) return;
+    if (send.isPending || inFlightRef.current) return;
 
     let convoId = activeId;
     if (!convoId) {
@@ -108,18 +122,40 @@ const ChefScreen = () => {
         return;
       }
     }
-    setInput("");
+
+    inFlightRef.current = true;
+    const previousInput = input;
+    // Only clear the composer when this is a fresh send, not a retry — nothing was typed then.
+    if (!opts?.retry) setInput("");
+    setLastError(null);
+
     try {
-      await send.mutateAsync({ conversationId: convoId!, message: msg });
-    } catch (e: any) {
-      const code = e?.message ?? "";
-      const msg =
-        e?.context?.status === 429 || /rate_limited/i.test(code)
-          ? "The AI is a bit busy — try again in a moment."
-          : e?.context?.status === 402
-          ? "AI credits ran out. Please add credits to continue."
-          : "AI Chef couldn't respond. Please try again.";
-      toast({ title: msg, variant: "destructive" });
+      await send.mutateAsync({
+        conversationId: convoId!,
+        message: msg,
+        retry: opts?.retry === true,
+      });
+    } catch (e: unknown) {
+      const err = e instanceof ChefError ? e : null;
+      const code: ChefErrorCode = err?.code ?? "unknown_error";
+      const message = err?.message ?? "AI Chef couldn't respond. Please try again.";
+      // On failure the server rolled back the user message. Restore the composer
+      // text so the user doesn't lose what they typed, and surface an inline
+      // error card in the conversation with a "Try again" action.
+      if (!opts?.retry) setInput(previousInput);
+      setLastError({
+        code,
+        message,
+        requestId: err?.requestId,
+        lastMessage: msg,
+        convoId: convoId!,
+      });
+      // Only 429 gets a toast — everything else is shown inline where the answer would have been.
+      if (code === "gateway_rate_limited") {
+        toast({ title: message, variant: "destructive" });
+      }
+    } finally {
+      inFlightRef.current = false;
     }
   };
 
@@ -221,6 +257,14 @@ const ChefScreen = () => {
             Tilda is thinking…
           </div>
         )}
+
+        {!send.isPending && lastError && lastError.convoId === activeId && (
+          <ChefErrorCard
+            error={lastError}
+            onRetry={() => submit(lastError.lastMessage, { retry: true })}
+            onDismiss={() => setLastError(null)}
+          />
+        )}
       </div>
 
       <div className="border-t border-[hsl(var(--app-border))] bg-[hsl(var(--app-bg))] px-3 pt-2 pb-[env(safe-area-inset-bottom)]">
@@ -286,6 +330,65 @@ const ChefScreen = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+};
+
+// ---------- Inline error card ----------
+const ChefErrorCard = ({
+  error,
+  onRetry,
+  onDismiss,
+}: {
+  error: { code: ChefErrorCode; message: string; requestId?: string };
+  onRetry: () => void;
+  onDismiss: () => void;
+}) => {
+  const canRetry =
+    error.code !== "gateway_credits_exhausted" &&
+    error.code !== "unauthenticated" &&
+    error.code !== "conversation_not_found";
+  return (
+    <div className="app-card p-4 border-[hsl(var(--app-border))]" role="alert" aria-live="polite">
+      <div className="flex items-start gap-3">
+        <div className="h-9 w-9 rounded-full bg-[hsl(var(--app-primary-soft))] grid place-items-center shrink-0">
+          <AlertCircle className="h-4 w-4 text-[hsl(var(--app-primary))]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[hsl(var(--app-foreground))]">
+            Tilda couldn't reply
+          </p>
+          <p className="mt-0.5 text-sm text-[hsl(var(--app-muted))]">{error.message}</p>
+          {error.requestId && (
+            <p className="mt-1 text-[10px] text-[hsl(var(--app-muted))] font-mono">
+              Ref {error.requestId.slice(0, 8)}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {canRetry && (
+              <Button size="sm" onClick={onRetry} className="h-8 rounded-full">
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Try again
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDismiss}
+              className="h-8 rounded-full"
+            >
+              Dismiss
+            </Button>
+            <Link
+              to="/app/discover"
+              className="h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-xs font-semibold bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] active:scale-95 no-tap-highlight"
+            >
+              <Compass className="h-3.5 w-3.5" />
+              Discover recipes
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

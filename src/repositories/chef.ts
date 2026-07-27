@@ -25,6 +25,30 @@ export type ChefMessageData = {
   clarifyingQuestion?: string | null;
 };
 
+export type ChefErrorCode =
+  | "unauthenticated"
+  | "invalid_request"
+  | "conversation_not_found"
+  | "message_persistence_failed"
+  | "model_unavailable"
+  | "gateway_unauthorized"
+  | "gateway_rate_limited"
+  | "gateway_credits_exhausted"
+  | "gateway_timeout"
+  | "gateway_upstream"
+  | "invalid_model_response"
+  | "unknown_error";
+
+export class ChefError extends Error {
+  code: ChefErrorCode;
+  requestId?: string;
+  constructor(code: ChefErrorCode, message: string, requestId?: string) {
+    super(message);
+    this.code = code;
+    this.requestId = requestId;
+  }
+}
+
 export const chefRepository = {
   async listConversations(userId: string): Promise<ChefConversation[]> {
     const { data, error } = await supabase
@@ -70,8 +94,10 @@ export const chefRepository = {
   async sendMessage(
     conversationId: string,
     message: string,
+    opts?: { retry?: boolean },
   ): Promise<{
     conversationId: string;
+    requestId: string;
     assistant: {
       content: string;
       clarifyingQuestion?: string;
@@ -80,9 +106,47 @@ export const chefRepository = {
     };
   }> {
     const { data, error } = await supabase.functions.invoke("chef", {
-      body: { conversationId, message },
+      body: { conversationId, message, retry: opts?.retry === true },
     });
-    if (error) throw error;
-    return data;
+
+    // Edge Function returns a structured error body on non-2xx statuses.
+    // supabase-js surfaces those as `error` with a `context.response`.
+    if (error) {
+      // Try to parse the structured error body if present.
+      let code: ChefErrorCode = "unknown_error";
+      let requestId: string | undefined;
+      let userMsg = "Something went wrong. Please try again.";
+      try {
+        const ctx = (error as unknown as { context?: { response?: Response } }).context;
+        if (ctx?.response) {
+          const body = await ctx.response.clone().json();
+          if (body?.error) code = body.error as ChefErrorCode;
+          if (typeof body?.requestId === "string") requestId = body.requestId;
+          if (typeof body?.message === "string" && body.message) userMsg = body.message;
+        }
+      } catch {
+        // fall through with defaults
+      }
+      throw new ChefError(code, userMsg, requestId);
+    }
+
+    if (!data || typeof data !== "object") {
+      throw new ChefError("invalid_model_response", "Unexpected empty response.");
+    }
+    // A 200 response may still carry a soft error body (shouldn't with current server, but be safe).
+    if ((data as { error?: string }).error) {
+      const d = data as { error: ChefErrorCode; message?: string; requestId?: string };
+      throw new ChefError(d.error, d.message ?? "Something went wrong.", d.requestId);
+    }
+    return data as {
+      conversationId: string;
+      requestId: string;
+      assistant: {
+        content: string;
+        clarifyingQuestion?: string;
+        recipes: ChefRecipeCard[];
+        tips: string[];
+      };
+    };
   },
 };
