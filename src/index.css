@@ -129,6 +129,8 @@
     background: hsl(var(--app-bg));
     color: hsl(var(--app-foreground));
     min-height: 100dvh;
+    /* Shared measurement of the fixed bottom nav — kept in sync with BottomNav. */
+    --app-nav-h: 68px;
   }
   .app-card {
     background: hsl(var(--app-surface));
@@ -148,6 +150,13 @@
   }
   .safe-top { padding-top: max(env(safe-area-inset-top), 0.5rem); }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0.75rem); }
+  /* Content padding that clears the bottom nav + iOS home indicator. */
+  .pb-nav { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--app-nav-h, 68px) + 1rem); }
 
   .no-tap-highlight { -webkit-tap-highlight-color: transparent; }
+
+  /* When Radix locks the body (Dialog/Sheet open), hide floating chrome
+     so update prompts/toasts don't sit above modal actions. */
+  body[data-scroll-locked] .hide-when-modal { opacity: 0; pointer-events: none; }
 }
+
