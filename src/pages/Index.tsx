@@ -28,6 +28,7 @@ const Index = () => {
         <TestimonialSection />
         <ArticlesPreviewSection />
         <TrustSection />
+        <FutureRoadmapSection />
         <FAQ />
         <FinalCTA />
       </main>
