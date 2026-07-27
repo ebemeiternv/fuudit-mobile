@@ -1,23 +1,33 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
-import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import { useMealPlan } from "@/hooks/queries/useMealPlan";
 import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import { useProductIntelligence } from "@/hooks/queries/useProductIntelligence";
+import { useRecipesByIngredients } from "@/hooks/queries/useRecipes";
 import { pickAmbientHint } from "@/lib/productIntelligence";
 import { todayLocalIso } from "@/lib/dates";
+import {
+  pantryNamesToIngredients,
+  pickSpoonDiet,
+  pickSpoonIntolerances,
+} from "@/lib/spoonacular";
+import { spoonErrorMessage } from "@/lib/spoonErrors";
 import ScreenHeader from "@/components/app/ScreenHeader";
+import RecipeCard from "@/components/app/recipes/RecipeCard";
+import ErrorState from "@/components/app/states/ErrorState";
+import LoadingState from "@/components/app/states/LoadingState";
 import {
   ArrowRight,
-  Leaf,
   AlertCircle,
   ChefHat,
   ShoppingBag,
   Plus,
   Sparkles,
   CalendarDays,
+  Search,
 } from "lucide-react";
 import {
   daysUntilExpiry,
@@ -30,7 +40,6 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
-  const impact = usePantryImpact(user?.id);
   const todayIso = todayLocalIso();
   const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
   const { data: groceryItems = [] } = useGroceryItems(user?.id);
@@ -41,6 +50,25 @@ const HomeScreen = () => {
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  // Featured recipe uses the same query as Discover → shared TanStack cache.
+  const diet = pickSpoonDiet(profile?.dietary_preferences ?? []);
+  const intolerances = pickSpoonIntolerances(profile?.allergies ?? []);
+  const featuredIngredients = useMemo(() => {
+    const withDays = pantry.map((p) => ({
+      name: p.name,
+      d: daysUntilExpiry(p.expires_on) ?? 999,
+    }));
+    withDays.sort((a, b) => a.d - b.d);
+    return pantryNamesToIngredients(withDays.map((p) => p.name));
+  }, [pantry]);
+  const featuredQuery = useRecipesByIngredients({
+    ingredients: featuredIngredients,
+    diet,
+    intolerances,
+    enabled: featuredIngredients.length > 0,
+  });
+  const featured = featuredQuery.data?.[0];
 
   const expiring = pantry
     .filter((i) => {
