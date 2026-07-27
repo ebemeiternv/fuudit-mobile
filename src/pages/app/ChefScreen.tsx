@@ -257,6 +257,14 @@ const ChefScreen = () => {
             Tilda is thinking…
           </div>
         )}
+
+        {!send.isPending && lastError && lastError.convoId === activeId && (
+          <ChefErrorCard
+            error={lastError}
+            onRetry={() => submit(lastError.lastMessage, { retry: true })}
+            onDismiss={() => setLastError(null)}
+          />
+        )}
       </div>
 
       <div className="border-t border-[hsl(var(--app-border))] bg-[hsl(var(--app-bg))] px-3 pt-2 pb-[env(safe-area-inset-bottom)]">
