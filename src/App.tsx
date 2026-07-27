@@ -21,6 +21,8 @@ import OnboardingScreen from "./pages/app/OnboardingScreen";
 import RecipeDetailScreen from "./pages/app/RecipeDetailScreen";
 import SavedRecipesScreen from "./pages/app/SavedRecipesScreen";
 import DiscoverScreen from "./pages/app/DiscoverScreen";
+import OfflineBanner from "@/pwa/OfflineBanner";
+import UpdatePrompt from "@/pwa/UpdatePrompt";
 
 const queryClient = new QueryClient();
 
@@ -29,8 +31,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineBanner />
+      <UpdatePrompt />
       <BrowserRouter>
         <AuthProvider>
+
           <Routes>
             {/* Marketing / public */}
             <Route path="/" element={<Index />} />
