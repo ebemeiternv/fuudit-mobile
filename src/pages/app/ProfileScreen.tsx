@@ -9,6 +9,7 @@ import { Bell, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users }
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile(user?.id);
+  const impact = usePantryImpact(user?.id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -50,9 +51,12 @@ const ProfileScreen = () => {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Saved", value: "2.4 kg" },
-            { label: "Recipes", value: "18" },
-            { label: "Streak", value: "6 d" },
+            { label: "Consumed", value: String(impact.consumed) },
+            { label: "Discarded", value: String(impact.discarded) },
+            {
+              label: "Used %",
+              value: impact.consumedPct !== null ? `${impact.consumedPct}%` : "—",
+            },
           ].map((s) => (
             <div key={s.label} className="app-card-flat p-4 text-center">
               <p className="text-xl font-bold text-[hsl(var(--app-foreground))]">{s.value}</p>
