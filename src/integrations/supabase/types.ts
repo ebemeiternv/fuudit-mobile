@@ -172,37 +172,46 @@ export type Database = {
       }
       pantry_items: {
         Row: {
+          category: string | null
           created_at: string
           expires_on: string | null
           id: string
           location: Database["public"]["Enums"]["pantry_location"]
           name: string
           notes: string | null
+          purchased_on: string | null
           quantity: number | null
+          status: Database["public"]["Enums"]["pantry_item_status"]
           unit: Database["public"]["Enums"]["unit_type"] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           expires_on?: string | null
           id?: string
           location?: Database["public"]["Enums"]["pantry_location"]
           name: string
           notes?: string | null
+          purchased_on?: string | null
           quantity?: number | null
+          status?: Database["public"]["Enums"]["pantry_item_status"]
           unit?: Database["public"]["Enums"]["unit_type"] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           expires_on?: string | null
           id?: string
           location?: Database["public"]["Enums"]["pantry_location"]
           name?: string
           notes?: string | null
+          purchased_on?: string | null
           quantity?: number | null
+          status?: Database["public"]["Enums"]["pantry_item_status"]
           unit?: Database["public"]["Enums"]["unit_type"] | null
           updated_at?: string
           user_id?: string
@@ -329,6 +338,7 @@ export type Database = {
     Enums: {
       chef_message_role: "user" | "assistant" | "system"
       meal_type: "breakfast" | "lunch" | "dinner" | "snack"
+      pantry_item_status: "active" | "consumed" | "discarded"
       pantry_location: "fridge" | "freezer" | "pantry" | "other"
       unit_type: "g" | "kg" | "ml" | "l" | "piece" | "tbsp" | "tsp" | "cup"
     }
@@ -460,6 +470,7 @@ export const Constants = {
     Enums: {
       chef_message_role: ["user", "assistant", "system"],
       meal_type: ["breakfast", "lunch", "dinner", "snack"],
+      pantry_item_status: ["active", "consumed", "discarded"],
       pantry_location: ["fridge", "freezer", "pantry", "other"],
       unit_type: ["g", "kg", "ml", "l", "piece", "tbsp", "tsp", "cup"],
     },
