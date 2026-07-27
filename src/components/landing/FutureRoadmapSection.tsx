@@ -48,11 +48,13 @@ const FutureRoadmapSection = () => (
               key={item.title}
               className="rounded-3xl border-2 border-dashed border-sage-200 bg-white p-6"
             >
-              <div className="inline-flex items-center rounded-full bg-cream-100 px-3 py-1 text-xs font-semibold text-cream-800 mb-4">
-                On our roadmap
-              </div>
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sage-100 text-sage-700 mb-4">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+              <div className="flex items-center justify-between mb-4">
+                <span className="inline-flex items-center rounded-full bg-cream-100 px-3 py-1 text-xs font-semibold text-cream-800">
+                  On our roadmap
+                </span>
+                <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sage-100 text-sage-700">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </div>
               </div>
               <h3 className="text-base font-semibold text-nordic-800 mb-2">
                 {item.title}
