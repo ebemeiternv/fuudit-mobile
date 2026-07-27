@@ -28,6 +28,8 @@ const HomeScreen = () => {
   const { data: profile } = useProfile(user?.id);
   const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
   const impact = usePantryImpact(user?.id);
+  const todayIso = todayLocalIso();
+  const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
