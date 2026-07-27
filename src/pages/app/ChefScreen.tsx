@@ -334,6 +334,65 @@ const ChefScreen = () => {
   );
 };
 
+// ---------- Inline error card ----------
+const ChefErrorCard = ({
+  error,
+  onRetry,
+  onDismiss,
+}: {
+  error: { code: ChefErrorCode; message: string; requestId?: string };
+  onRetry: () => void;
+  onDismiss: () => void;
+}) => {
+  const canRetry =
+    error.code !== "gateway_credits_exhausted" &&
+    error.code !== "unauthenticated" &&
+    error.code !== "conversation_not_found";
+  return (
+    <div className="app-card p-4 border-[hsl(var(--app-border))]" role="alert" aria-live="polite">
+      <div className="flex items-start gap-3">
+        <div className="h-9 w-9 rounded-full bg-[hsl(var(--app-primary-soft))] grid place-items-center shrink-0">
+          <AlertCircle className="h-4 w-4 text-[hsl(var(--app-primary))]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[hsl(var(--app-foreground))]">
+            Tilda couldn't reply
+          </p>
+          <p className="mt-0.5 text-sm text-[hsl(var(--app-muted))]">{error.message}</p>
+          {error.requestId && (
+            <p className="mt-1 text-[10px] text-[hsl(var(--app-muted))] font-mono">
+              Ref {error.requestId.slice(0, 8)}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {canRetry && (
+              <Button size="sm" onClick={onRetry} className="h-8 rounded-full">
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Try again
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDismiss}
+              className="h-8 rounded-full"
+            >
+              Dismiss
+            </Button>
+            <Link
+              to="/app/discover"
+              className="h-8 inline-flex items-center gap-1.5 rounded-full px-3 text-xs font-semibold bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] active:scale-95 no-tap-highlight"
+            >
+              <Compass className="h-3.5 w-3.5" />
+              Discover recipes
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ---------- Intro ----------
 const ChefIntro = ({ onPick }: { onPick: (prompt: string) => void }) => (
   <div className="app-card p-5 text-center">
