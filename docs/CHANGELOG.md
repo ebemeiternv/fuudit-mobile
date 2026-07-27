@@ -1,5 +1,65 @@
 # Fuudit Changelog
 
+## Mobile Beta UX Audit — Round 1
+
+Audit of the installed PWA on iPhone-sized screens across all 16 flows. Focus: real-use friction, not redesign. Blocker and high-friction items are fixed in this pass; medium/cosmetic items are logged for a follow-up.
+
+### Blocker / high-friction — fixed
+
+**1. Barcode scan sheet claimed camera scanning as the primary path on iPhone.**
+- User-facing problem: on iPhone Safari and the installed PWA the sheet still opened with "Scan product / Point the camera at the barcode" but the camera never appears (Apple ships no `BarcodeDetector` in the web view). The manual-entry fallback was rendered as a small grey helper note, and the "unsupported" copy read as an error.
+- Severity: high friction (feature appears broken on the platform most beta testers use).
+- Fix: `BarcodeScanSheet` now detects iOS/iPadOS and, when scanning capability is missing, (a) retitles the sheet to "Enter barcode / Type the number under the barcode to fetch product details.", (b) replaces the grey error card with a friendly primary-tinted block explaining that live scanning isn't available in the current iPhone web version and that native scanning is coming with the iPhone app, and (c) keeps standard manual Pantry entry reachable via the existing "Add manually" path in `PantryScreen`. No claim is made that camera scanning works on the iPhone PWA.
+
+**2. Bottom sheets used `vh` instead of `dvh` — iOS keyboard clipped the submit button.**
+- User-facing problem: on iPhone, opening the software keyboard inside Add-to-Meal-Plan and Profile sheets ("Household", "Dietary preferences", "Privacy", "Help") pushed the "Save" / primary action off-screen because `100vh` doesn't shrink with the keyboard on iOS Safari.
+- Severity: high friction (users couldn't complete the flow without dismissing the keyboard).
+- Fix: swapped every `max-h-[92vh]` / `max-h-[90vh]` sheet to `max-h-[92dvh]` / `max-h-[90dvh]` so the sheet resizes with the visible viewport. Affects `AddToMealPlanSheet` and all four `ProfileSheets` (`Household`, `Dietary`, `Privacy`, `Help`). Pantry, Grocery, Generate, and Barcode sheets already used `dvh` and are unchanged.
+
+### Medium / cosmetic — deferred (not changed this pass)
+
+Listed for approval before any edit lands:
+
+- **BottomNav uses six equal columns.** On 320 px screens ("AI Chef", "Grocery") the labels sit close to the tab edges. Fix candidate: shrink label to 9 px on `<360 px` or drop the label to icon-only under a threshold.
+- **`ScreenHeader` right slot can overlap the title on narrow widths.** Grocery header ("Generate" + "+") occupies ~120 px and can push the "Grocery" title to two lines on 320 px. Fix candidate: hide the "Generate" label under 360 px, keep the icon.
+- **Update prompt bottom offset is `calc(env(safe-area-inset-bottom) + 6rem)`.** Correct above the bottom nav but sits over the FAB on Pantry/Grocery when the prompt appears. Fix candidate: shift the FAB up when the update handler is armed.
+- **Recipe Detail "Add to meal plan" is a full-width secondary button below the fold.** Users must scroll past the ingredients list. Fix candidate: sticky bottom action bar with primary CTA.
+- **Meal Plan entry menu ("Edit / Move / Remove") is behind a 32 px kebab button.** Meets 44 px hit area via padding but visual affordance is small. Fix candidate: swap for a right-side chevron with clearer semantics.
+- **Grocery row check circle is 32 px.** Hits 44 px only via row padding; consider bumping the visible circle to 36 px.
+- **Onboarding "skip for now" is a small underline.** Meets AA contrast but not 44 px. Fix candidate: pad to a full-width ghost button.
+- **Auth screen keyboard scroll:** on iPhone the "Continue with Google" button can sit behind the keyboard when the email field has focus. Fix candidate: scroll target into view on focus.
+- **Chef composer:** send button uses a 40 px circle; hit area is fine via padding but visual size could grow to 44 px for symmetry with pantry FAB.
+- **Empty states across Pantry, Meal Plan, Grocery** share the same icon-in-tile pattern but with slightly different copy tones. Cosmetic consistency pass suggested.
+- **Offline banner + Update prompt stacking:** if both appear together the update prompt is readable but the offline banner covers the "Discover" header. Fix candidate: push main content down by banner height when banner is visible.
+- **Save-to-favourites heart on Recipe Detail** is unlabeled; add `aria-label="Save recipe" / "Unsave recipe"`.
+
+### Preserved
+
+Visual identity, navigation, authentication, database, Product Intelligence, Recipe Discovery, AI Chef, Meal Plan, Grocery loop, and the PWA service-worker update strategy are unchanged.
+
+### iPhone PWA manual test checklist
+
+Run on a real iPhone with the installed PWA (Add to Home Screen). Sign in as a beta account with at least one pantry item.
+
+1. Cold launch from the home-screen icon → Home renders greeting + Recommended for you + Quick Actions without horizontal overflow.
+2. Sign out → sign back in → session returns to Home; no re-onboarding.
+3. Pantry → **+** → add an item manually. Confirm date picker, category, unit, and expiry chip are all reachable above the keyboard.
+4. Pantry → **Scan** → confirm the sheet says "Enter barcode" (not "Scan product"), shows the iPhone explanation block, and the numeric keypad opens.
+5. Enter a real EAN-13 (e.g. an item from your fridge) → prefill flows into `PantryItemSheet`.
+6. Smart expiry chips appear on second-add of the same category; tapping updates the expiry field.
+7. Pantry item → swipe/tap actions: Edit, Consumed, Discarded, Delete each show a toast and update counts.
+8. AI Chef → send a message with the software keyboard open; composer sits above the keyboard; response card renders; "Try again" works after forced error.
+9. Discover → search "chicken"; open a recipe; Save; Unsave; Add to meal plan → date + slot + servings all above keyboard.
+10. Meal Plan → tap a slot → change date and slot via chips; Move + Remove work; custom-title flow works.
+11. Grocery → Generate from this week's plan → confirm ingredients merge and Pantry subtraction removes already-owned items.
+12. Grocery → tick an item → **Add to pantry** from row menu → item appears in Pantry with correct quantity.
+13. Profile → each row opens its sheet; primary action button visible with the keyboard open (dvh fix).
+14. Airplane mode → offline banner appears; return online → "Back online" banner clears after 3 s.
+15. Deploy a new build → within 60 s of foreground, "A new version of Fuudit is ready" prompt appears; Update reloads once with the same route; Build ID in Profile changes.
+16. `?sw=off` kill switch loads the app without registering a service worker; existing registration is unregistered.
+
+
+
 ## Profile — Interactive rows fix
 
 **Symptom.** On iPhone Safari and the installed PWA, Profile rows (Household, Dietary preferences, Notifications, Privacy, Preferences, Help & support) looked tappable but did nothing. Only "Saved recipes" navigated.
