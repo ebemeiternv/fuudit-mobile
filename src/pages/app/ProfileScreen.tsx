@@ -11,6 +11,7 @@ const ProfileScreen = () => {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const impact = usePantryImpact(user?.id);
+  const { data: saved = [] } = useSavedRecipes(user?.id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,7 +27,18 @@ const ProfileScreen = () => {
     ? `${profile.dietary_preferences.length} selected`
     : "Not set";
 
-  const rows = [
+  const rows: {
+    Icon: typeof Users;
+    label: string;
+    value: string;
+    onClick?: () => void;
+  }[] = [
+    {
+      Icon: Bookmark,
+      label: "Saved recipes",
+      value: `${saved.length}`,
+      onClick: () => navigate("/app/saved"),
+    },
     { Icon: Users, label: "Household", value: `${householdSize} ${householdSize === 1 ? "person" : "people"}` },
     { Icon: Leaf, label: "Dietary preferences", value: dietary },
     { Icon: Bell, label: "Notifications", value: "On" },
