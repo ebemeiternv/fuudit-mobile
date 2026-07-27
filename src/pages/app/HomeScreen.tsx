@@ -31,6 +31,8 @@ const HomeScreen = () => {
   const impact = usePantryImpact(user?.id);
   const todayIso = todayLocalIso();
   const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
+  const { data: groceryItems = [] } = useGroceryItems(user?.id);
+  const pendingGrocery = groceryItems.filter((i) => !i.checked).length;
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
@@ -250,8 +252,14 @@ const HomeScreen = () => {
               <div className="h-10 w-10 rounded-xl bg-[hsl(var(--app-accent-berry-soft))] text-[hsl(var(--app-accent-berry))] grid place-items-center mb-3">
                 <ShoppingBag className="h-5 w-5" />
               </div>
-              <p className="font-semibold text-[hsl(var(--app-foreground))]">Build shopping list</p>
-              <p className="text-xs text-[hsl(var(--app-muted))] mt-1">From your meal plan</p>
+              <p className="font-semibold text-[hsl(var(--app-foreground))]">
+                {pendingGrocery > 0 ? `Grocery · ${pendingGrocery}` : "Build shopping list"}
+              </p>
+              <p className="text-xs text-[hsl(var(--app-muted))] mt-1">
+                {pendingGrocery > 0
+                  ? `${pendingGrocery} item${pendingGrocery === 1 ? "" : "s"} to pick up`
+                  : "From your meal plan"}
+              </p>
             </Link>
           </div>
         </section>
