@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Users, Bookmark, BookmarkCheck } from "lucide-react";
+import { Clock, Users, Bookmark, BookmarkCheck, CalendarPlus } from "lucide-react";
 
 export type RecipeCardData = {
   spoonId?: number;
@@ -18,9 +18,10 @@ type Props = {
   saved?: boolean;
   saving?: boolean;
   onToggleSave?: () => void;
+  onAddToPlan?: () => void;
 };
 
-const RecipeCard = ({ recipe, saved, saving, onToggleSave }: Props) => {
+const RecipeCard = ({ recipe, saved, saving, onToggleSave, onAddToPlan }: Props) => {
   const target = recipe.localId
     ? `/app/recipes/local/${recipe.localId}`
     : `/app/recipes/spoon/${recipe.spoonId}`;
@@ -97,6 +98,19 @@ const RecipeCard = ({ recipe, saved, saving, onToggleSave }: Props) => {
                 </span>
               ))}
             </div>
+          )}
+          {onAddToPlan && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddToPlan();
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] active:scale-95 transition-transform no-tap-highlight"
+            >
+              <CalendarPlus className="h-3.5 w-3.5" /> Add to meal plan
+            </button>
           )}
         </div>
       </Link>

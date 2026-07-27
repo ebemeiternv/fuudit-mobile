@@ -141,6 +141,7 @@ export type Database = {
       meal_plan_entries: {
         Row: {
           created_at: string
+          custom_title: string | null
           date: string
           id: string
           meal_type: Database["public"]["Enums"]["meal_type"]
@@ -152,6 +153,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_title?: string | null
           date: string
           id?: string
           meal_type: Database["public"]["Enums"]["meal_type"]
@@ -163,6 +165,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_title?: string | null
           date?: string
           id?: string
           meal_type?: Database["public"]["Enums"]["meal_type"]

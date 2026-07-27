@@ -4,18 +4,22 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 export type MealPlanEntry = Tables<"meal_plan_entries">;
 export type MealPlanEntryInsert = TablesInsert<"meal_plan_entries">;
 export type MealPlanEntryUpdate = TablesUpdate<"meal_plan_entries">;
+export type Recipe = Tables<"recipes">;
+
+export type MealPlanEntryWithRecipe = MealPlanEntry & { recipe: Recipe | null };
 
 export const mealPlanRepository = {
-  async listRange(userId: string, from: string, to: string): Promise<MealPlanEntry[]> {
+  async listRange(userId: string, from: string, to: string): Promise<MealPlanEntryWithRecipe[]> {
     const { data, error } = await supabase
       .from("meal_plan_entries")
-      .select("*")
+      .select("*, recipe:recipes(*)")
       .eq("user_id", userId)
       .gte("date", from)
       .lte("date", to)
-      .order("date", { ascending: true });
+      .order("date", { ascending: true })
+      .order("created_at", { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as MealPlanEntryWithRecipe[];
   },
   async create(input: MealPlanEntryInsert): Promise<MealPlanEntry> {
     const { data, error } = await supabase

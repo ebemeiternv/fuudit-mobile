@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import AddToMealPlanSheet from "@/components/app/mealplan/AddToMealPlanSheet";
 
 const SavedRecipesScreen = () => {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ const SavedRecipesScreen = () => {
 
   const [search, setSearch] = useState("");
   const [dietFilter, setDietFilter] = useState<string>("all");
+  const [planTarget, setPlanTarget] = useState<{ recipeId: string; title: string } | null>(null);
 
   const availableDiets = useMemo(() => {
     const set = new Set<string>();
@@ -158,6 +160,7 @@ const SavedRecipesScreen = () => {
                   saved
                   saving={unsaveMut.isPending}
                   onToggleSave={() => handleUnsave(r.id)}
+                  onAddToPlan={() => setPlanTarget({ recipeId: r.id, title: r.title })}
                   recipe={{
                     localId: r.id,
                     title: r.title,
@@ -172,6 +175,13 @@ const SavedRecipesScreen = () => {
           </div>
         )}
       </div>
+
+      <AddToMealPlanSheet
+        open={!!planTarget}
+        onOpenChange={(o) => !o && setPlanTarget(null)}
+        payload={planTarget ? { kind: "recipe", recipeId: planTarget.recipeId } : null}
+        title={planTarget?.title}
+      />
     </div>
   );
 };
