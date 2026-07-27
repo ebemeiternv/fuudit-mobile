@@ -34,6 +34,8 @@ import type { ChefMessage, ChefMessageData, ChefRecipeCard } from "@/repositorie
 import { useSavedRecipes, useUnsaveRecipe } from "@/hooks/queries/useSavedRecipes";
 import { useSaveSpoonacularRecipe } from "@/hooks/queries/useRecipes";
 import RecipeCard from "@/components/app/recipes/RecipeCard";
+import AddToMealPlanSheet from "@/components/app/mealplan/AddToMealPlanSheet";
+import type { AddToMealPlanPayload } from "@/hooks/queries/useMealPlan";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
