@@ -20,6 +20,7 @@ import ProfileScreen from "./pages/app/ProfileScreen";
 import OnboardingScreen from "./pages/app/OnboardingScreen";
 import RecipeDetailScreen from "./pages/app/RecipeDetailScreen";
 import SavedRecipesScreen from "./pages/app/SavedRecipesScreen";
+import DiscoverScreen from "./pages/app/DiscoverScreen";
 
 const queryClient = new QueryClient();
 
