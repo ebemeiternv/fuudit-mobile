@@ -217,6 +217,33 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
             </SheetDescription>
           </SheetHeader>
 
+          {form.barcode && (
+            <div className="mx-5 mt-2 mb-1 flex items-center gap-3 rounded-2xl border border-[hsl(var(--app-border))] bg-[hsl(var(--app-subtle))] p-3">
+              {form.product_image_url ? (
+                <img
+                  src={form.product_image_url}
+                  alt=""
+                  loading="lazy"
+                  className="h-12 w-12 rounded-lg object-cover bg-white"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-white grid place-items-center text-xs font-bold text-[hsl(var(--app-muted))]">
+                  {form.brand?.[0]?.toUpperCase() ?? "#"}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-[hsl(var(--app-muted))] uppercase tracking-wide">
+                  {form.product_source === "openfoodfacts" ? "Open Food Facts" : "Scanned product"}
+                </p>
+                <p className="text-sm text-[hsl(var(--app-foreground))] truncate">
+                  {[form.brand, form.package_quantity ? `${form.package_quantity} ${form.package_unit || ""}`.trim() : null]
+                    .filter(Boolean)
+                    .join(" · ") || `Barcode ${form.barcode}`}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="px-5 py-4 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="name">Name</Label>
