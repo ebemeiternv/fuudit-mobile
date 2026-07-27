@@ -460,8 +460,17 @@ const PantryScreen = () => {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         item={editing}
+        initialValues={scanInitial}
         onSubmit={handleSubmit}
         saving={createMut.isPending || updateMut.isPending}
+      />
+
+      <BarcodeScanSheet
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        userId={userId}
+        onPrefill={handleScanPrefill}
+        onDuplicate={handleScanDuplicate}
       />
 
       <AlertDialog
