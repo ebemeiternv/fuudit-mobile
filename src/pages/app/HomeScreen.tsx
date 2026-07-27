@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import { useMealPlan } from "@/hooks/queries/useMealPlan";
+import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import { todayLocalIso } from "@/lib/dates";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
