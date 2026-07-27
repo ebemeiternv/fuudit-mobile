@@ -8,6 +8,7 @@ import MobileAvailability from "@/components/landing/MobileAvailability";
 import TestimonialSection from "@/components/TestimonialSection";
 import ArticlesPreviewSection from "@/components/ArticlesPreviewSection";
 import TrustSection from "@/components/landing/TrustSection";
+import FutureRoadmapSection from "@/components/landing/FutureRoadmapSection";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
