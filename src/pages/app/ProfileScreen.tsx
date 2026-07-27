@@ -2,14 +2,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
+import { useSavedRecipes } from "@/hooks/queries/useSavedRecipes";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+import { Bell, Bookmark, Leaf, Settings, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const impact = usePantryImpact(user?.id);
+  const { data: saved = [] } = useSavedRecipes(user?.id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -25,7 +27,18 @@ const ProfileScreen = () => {
     ? `${profile.dietary_preferences.length} selected`
     : "Not set";
 
-  const rows = [
+  const rows: {
+    Icon: typeof Users;
+    label: string;
+    value: string;
+    onClick?: () => void;
+  }[] = [
+    {
+      Icon: Bookmark,
+      label: "Saved recipes",
+      value: `${saved.length}`,
+      onClick: () => navigate("/app/saved"),
+    },
     { Icon: Users, label: "Household", value: `${householdSize} ${householdSize === 1 ? "person" : "people"}` },
     { Icon: Leaf, label: "Dietary preferences", value: dietary },
     { Icon: Bell, label: "Notifications", value: "On" },
@@ -66,10 +79,14 @@ const ProfileScreen = () => {
         </div>
 
         <div className="app-card divide-y divide-[hsl(var(--app-border))]">
-          {rows.map(({ Icon, label, value }) => (
-            <button key={label} className="flex items-center gap-3 p-4 w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors">
+          {rows.map(({ Icon, label, value, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="flex items-center gap-3 p-4 w-full text-left no-tap-highlight active:bg-[hsl(var(--app-subtle))] transition-colors"
+            >
               <div className="h-9 w-9 rounded-xl bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] grid place-items-center">
-                <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                <Icon className="h-[18px] w-[18px]" />
               </div>
               <span className="flex-1 font-medium text-[hsl(var(--app-foreground))]">{label}</span>
               {value && <span className="text-sm text-[hsl(var(--app-muted))]">{value}</span>}

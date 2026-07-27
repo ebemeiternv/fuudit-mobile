@@ -5,11 +5,13 @@ type Props = {
   subtitle?: string;
   eyebrow?: string;
   right?: ReactNode;
+  left?: ReactNode;
 };
 
-const ScreenHeader = ({ title, subtitle, eyebrow, right }: Props) => (
-  <header className="safe-top px-5 pt-3 pb-4 flex items-start justify-between gap-3">
-    <div className="min-w-0">
+const ScreenHeader = ({ title, subtitle, eyebrow, right, left }: Props) => (
+  <header className="safe-top px-5 pt-3 pb-4 flex items-start gap-3">
+    {left && <div className="shrink-0 pt-1">{left}</div>}
+    <div className="min-w-0 flex-1">
       {eyebrow && (
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--app-primary))] mb-1">
           {eyebrow}

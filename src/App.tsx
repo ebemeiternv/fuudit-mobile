@@ -18,6 +18,8 @@ import MealPlanScreen from "./pages/app/MealPlanScreen";
 import GroceryScreen from "./pages/app/GroceryScreen";
 import ProfileScreen from "./pages/app/ProfileScreen";
 import OnboardingScreen from "./pages/app/OnboardingScreen";
+import RecipeDetailScreen from "./pages/app/RecipeDetailScreen";
+import SavedRecipesScreen from "./pages/app/SavedRecipesScreen";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ const App = () => (
               <Route path="meal-plan" element={<MealPlanScreen />} />
               <Route path="grocery" element={<GroceryScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
+              <Route path="saved" element={<SavedRecipesScreen />} />
+              <Route path="recipes/:source/:id" element={<RecipeDetailScreen />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
