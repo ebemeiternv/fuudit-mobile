@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -8,6 +9,7 @@ import {
   X,
   Pencil,
   SlidersHorizontal,
+  History as HistoryIcon,
 } from "lucide-react";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import { Input } from "@/components/ui/input";
@@ -195,13 +197,22 @@ const PantryScreen = () => {
         title="Pantry"
         subtitle={subtitle}
         right={
-          <button
-            onClick={openAdd}
-            aria-label="Add pantry item"
-            className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/app/pantry/history"
+              aria-label="Pantry history"
+              className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center no-tap-highlight active:scale-95 transition-transform"
+            >
+              <HistoryIcon className="h-5 w-5 text-[hsl(var(--app-foreground))]" />
+            </Link>
+            <button
+              onClick={openAdd}
+              aria-label="Add pantry item"
+              className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
         }
       />
 

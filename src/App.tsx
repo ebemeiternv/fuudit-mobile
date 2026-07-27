@@ -12,6 +12,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import AppLayout from "@/components/app/AppLayout";
 import HomeScreen from "./pages/app/HomeScreen";
 import PantryScreen from "./pages/app/PantryScreen";
+import PantryHistoryScreen from "./pages/app/PantryHistoryScreen";
 import ChefScreen from "./pages/app/ChefScreen";
 import MealPlanScreen from "./pages/app/MealPlanScreen";
 import GroceryScreen from "./pages/app/GroceryScreen";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="onboarding" element={<OnboardingScreen />} />
               <Route path="home" element={<HomeScreen />} />
               <Route path="pantry" element={<PantryScreen />} />
+              <Route path="pantry/history" element={<PantryHistoryScreen />} />
               <Route path="chef" element={<ChefScreen />} />
               <Route path="meal-plan" element={<MealPlanScreen />} />
               <Route path="grocery" element={<GroceryScreen />} />
