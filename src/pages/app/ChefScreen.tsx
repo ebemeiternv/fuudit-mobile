@@ -1,311 +1,429 @@
-import { useMemo, useState } from "react";
-import { Search, Sparkles, Refrigerator, X, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Sparkles, Send, Plus, MessageSquare, Trash2, ChefHat, Compass } from "lucide-react";
+import { Link } from "react-router-dom";
 import ScreenHeader from "@/components/app/ScreenHeader";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import LoadingState from "@/components/app/states/LoadingState";
-import EmptyState from "@/components/app/states/EmptyState";
-import ErrorState from "@/components/app/states/ErrorState";
-import RecipeCard from "@/components/app/recipes/RecipeCard";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/queries/useProfile";
-import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import {
-  useRecipeSearch,
-  useRecipesByIngredients,
-  useSaveSpoonacularRecipe,
-} from "@/hooks/queries/useRecipes";
+  useChefConversations,
+  useChefMessages,
+  useCreateChefConversation,
+  useDeleteChefConversation,
+  useSendChefMessage,
+} from "@/hooks/queries/useChef";
+import type { ChefMessage, ChefMessageData, ChefRecipeCard } from "@/repositories/chef";
 import { useSavedRecipes, useUnsaveRecipe } from "@/hooks/queries/useSavedRecipes";
-import {
-  pantryNamesToIngredients,
-  pickSpoonDiet,
-  pickSpoonIntolerances,
-} from "@/lib/spoonacular";
-import { spoonErrorMessage } from "@/lib/spoonErrors";
-import { daysUntilExpiry } from "@/lib/pantry";
+import { useSaveSpoonacularRecipe } from "@/hooks/queries/useRecipes";
+import RecipeCard from "@/components/app/recipes/RecipeCard";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-type Mode = "search" | "pantry";
+const STARTERS = [
+  "Use what expires first",
+  "Dinner in 20 minutes",
+  "Family-friendly dinner",
+  "High-protein idea",
+  "Use my leftovers",
+];
 
 const ChefScreen = () => {
   const { user } = useAuth();
   const userId = user?.id;
-  const { data: profile } = useProfile(userId);
-  const { data: pantry = [] } = usePantryItems(userId);
-  const { data: saved = [] } = useSavedRecipes(userId);
 
-  const savedBySource = useMemo(() => {
-    const m = new Map<string, string>(); // spoonacular source_id -> local recipe id
-    for (const s of saved) {
-      if (s.recipe?.source === "spoonacular" && s.recipe.source_id) {
-        m.set(s.recipe.source_id, s.recipe.id);
-      }
-    }
-    return m;
-  }, [saved]);
+  const { data: conversations = [] } = useChefConversations(userId);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const diet = pickSpoonDiet(profile?.dietary_preferences ?? []);
-  const intolerances = pickSpoonIntolerances(profile?.allergies ?? []);
+  // Select most recent conversation by default
+  useEffect(() => {
+    if (!activeId && conversations.length) setActiveId(conversations[0].id);
+  }, [conversations, activeId]);
 
-  const [mode, setMode] = useState<Mode>("search");
-  const [searchInput, setSearchInput] = useState("");
-  const [submittedQuery, setSubmittedQuery] = useState("");
-
-  // Pantry-mode chip management. Seeded from real pantry items, expiring first.
-  const pantryChips = useMemo(() => {
-    const withDays = pantry.map((p) => ({
-      name: p.name,
-      d: daysUntilExpiry(p.expires_on) ?? 999,
-    }));
-    withDays.sort((a, b) => a.d - b.d);
-    return pantryNamesToIngredients(withDays.map((p) => p.name));
-  }, [pantry]);
-  const expiringNames = useMemo(() => {
-    return new Set(
-      pantry
-        .filter((p) => {
-          const d = daysUntilExpiry(p.expires_on);
-          return d !== null && d <= 7;
-        })
-        .map((p) => p.name.toLowerCase()),
-    );
-  }, [pantry]);
-  const [removedChips, setRemovedChips] = useState<Set<string>>(new Set());
-  const activeChips = useMemo(
-    () => pantryChips.filter((c) => !removedChips.has(c)),
-    [pantryChips, removedChips],
+  const { data: messages = [], isLoading: loadingMessages } = useChefMessages(
+    activeId ?? undefined,
   );
 
-  const searchQuery = useRecipeSearch({
-    query: submittedQuery,
-    diet,
-    intolerances,
-    enabled: mode === "search" && submittedQuery.length > 0,
-  });
+  const createConvo = useCreateChefConversation(userId);
+  const deleteConvo = useDeleteChefConversation(userId);
+  const send = useSendChefMessage(userId);
 
-  const pantryQuery = useRecipesByIngredients({
-    ingredients: activeChips,
-    diet,
-    intolerances,
-    enabled: mode === "pantry" && activeChips.length > 0,
-  });
+  const [input, setInput] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const saveMut = useSaveSpoonacularRecipe(userId);
-  const unsaveMut = useUnsaveRecipe(userId);
+  // Autoscroll to newest message
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, send.isPending]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittedQuery(searchInput.trim());
-  };
-
-  const toggleSave = async (
-    spoonId: number,
-    hit: Parameters<typeof saveMut.mutateAsync>[0],
-  ) => {
-    const savedLocalId = savedBySource.get(String(spoonId));
+  const startNew = async () => {
+    if (!userId) return;
     try {
-      if (savedLocalId) {
-        await unsaveMut.mutateAsync(savedLocalId);
-        toast({ title: "Removed from saved" });
-      } else {
-        await saveMut.mutateAsync(hit);
-        toast({ title: "Saved" });
-      }
-    } catch (e) {
-      const { title, description } = spoonErrorMessage(e);
-      toast({ title, description, variant: "destructive" });
+      const c = await createConvo.mutateAsync(undefined);
+      setActiveId(c.id);
+      setHistoryOpen(false);
+      inputRef.current?.focus();
+    } catch {
+      toast({ title: "Couldn't start a new conversation", variant: "destructive" });
     }
   };
 
-  const activeQuery = mode === "search" ? searchQuery : pantryQuery;
-  const results = activeQuery.data ?? [];
+  const submit = async (text?: string) => {
+    if (!userId) return;
+    const msg = (text ?? input).trim();
+    if (!msg || send.isPending) return;
+
+    let convoId = activeId;
+    if (!convoId) {
+      try {
+        const c = await createConvo.mutateAsync(undefined);
+        convoId = c.id;
+        setActiveId(convoId);
+      } catch {
+        toast({ title: "Couldn't start a conversation", variant: "destructive" });
+        return;
+      }
+    }
+    setInput("");
+    try {
+      await send.mutateAsync({ conversationId: convoId!, message: msg });
+    } catch (e: any) {
+      const code = e?.message ?? "";
+      const msg =
+        e?.context?.status === 429 || /rate_limited/i.test(code)
+          ? "The AI is a bit busy — try again in a moment."
+          : e?.context?.status === 402
+          ? "AI credits ran out. Please add credits to continue."
+          : "AI Chef couldn't respond. Please try again.";
+      toast({ title: msg, variant: "destructive" });
+    }
+  };
+
+  const showIntro = !activeId || (messages.length === 0 && !send.isPending);
 
   return (
-    <div>
+    <div className="pb-3 flex flex-col h-[calc(100dvh-var(--app-nav-h,72px))]">
       <ScreenHeader
-        eyebrow="Recipes"
-        title="Discover"
-        subtitle="Find something to cook — from a keyword or your pantry"
+        title="AI Chef"
+        subtitle="Your pantry-aware cooking companion"
         right={
-          <div className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] grid place-items-center shadow-md">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex items-center gap-2">
+            <Link
+              to="/app/discover"
+              aria-label="Browse recipes"
+              className="h-9 w-9 grid place-items-center rounded-full bg-[hsl(var(--app-subtle))] active:scale-95 no-tap-highlight"
+            >
+              <Compass className="h-4 w-4 text-[hsl(var(--app-foreground))]" />
+            </Link>
+            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+              <SheetTrigger asChild>
+                <button
+                  aria-label="Conversation history"
+                  className="h-9 w-9 grid place-items-center rounded-full bg-[hsl(var(--app-subtle))] active:scale-95 no-tap-highlight"
+                >
+                  <MessageSquare className="h-4 w-4 text-[hsl(var(--app-foreground))]" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0">
+                <SheetHeader className="p-4 border-b border-[hsl(var(--app-border))]">
+                  <SheetTitle>Chats with Tilda</SheetTitle>
+                </SheetHeader>
+                <div className="p-3">
+                  <button
+                    onClick={startNew}
+                    className="w-full flex items-center gap-2 p-3 rounded-xl bg-[hsl(var(--app-primary))] text-white font-semibold active:scale-[.99] no-tap-highlight"
+                  >
+                    <Plus className="h-4 w-4" /> New conversation
+                  </button>
+                </div>
+                <div className="px-3 pb-6 space-y-1 overflow-y-auto max-h-[calc(100dvh-140px)]">
+                  {conversations.length === 0 ? (
+                    <p className="text-sm text-[hsl(var(--app-muted))] p-3">No chats yet.</p>
+                  ) : (
+                    conversations.map((c) => (
+                      <div
+                        key={c.id}
+                        className={cn(
+                          "flex items-center gap-1 rounded-xl px-1",
+                          activeId === c.id && "bg-[hsl(var(--app-subtle))]",
+                        )}
+                      >
+                        <button
+                          onClick={() => {
+                            setActiveId(c.id);
+                            setHistoryOpen(false);
+                          }}
+                          className="flex-1 text-left p-3 no-tap-highlight"
+                        >
+                          <p className="font-medium text-sm text-[hsl(var(--app-foreground))] line-clamp-1">
+                            {c.title || "New conversation"}
+                          </p>
+                          <p className="text-[11px] text-[hsl(var(--app-muted))]">
+                            {new Date(c.last_message_at).toLocaleDateString()}
+                          </p>
+                        </button>
+                        <button
+                          aria-label="Delete conversation"
+                          onClick={() => setPendingDelete(c.id)}
+                          className="h-9 w-9 grid place-items-center rounded-full text-[hsl(var(--app-muted))] active:scale-95 no-tap-highlight"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         }
       />
 
-      <div className="px-5 space-y-5">
-        {/* Mode switch */}
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[hsl(var(--app-subtle))]">
-          {(
-            [
-              { key: "search", label: "Search", Icon: Search },
-              { key: "pantry", label: "From pantry", Icon: Refrigerator },
-            ] as const
-          ).map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              onClick={() => setMode(key)}
-              className={`h-10 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 no-tap-highlight transition-colors ${
-                mode === key
-                  ? "bg-white text-[hsl(var(--app-foreground))] shadow-sm"
-                  : "text-[hsl(var(--app-muted))]"
-              }`}
-            >
-              <Icon className="h-4 w-4" /> {label}
-            </button>
-          ))}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 pt-2 pb-4 space-y-4"
+      >
+        {showIntro && <ChefIntro onPick={(p) => submit(p)} />}
+
+        {loadingMessages && activeId && <LoadingState label="Loading chat…" />}
+
+        {messages.map((m) => (
+          <MessageBubble key={m.id} message={m} userId={userId} />
+        ))}
+
+        {send.isPending && (
+          <div className="flex items-center gap-2 text-sm text-[hsl(var(--app-muted))]">
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            Tilda is thinking…
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-[hsl(var(--app-border))] bg-[hsl(var(--app-bg))] px-3 pt-2 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-end gap-2">
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask Tilda what to cook…"
+            rows={1}
+            className="min-h-[44px] max-h-32 resize-none rounded-2xl bg-[hsl(var(--app-subtle))] border-transparent focus-visible:ring-1 focus-visible:ring-[hsl(var(--app-primary))]"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            disabled={send.isPending}
+          />
+          <Button
+            onClick={() => submit()}
+            disabled={!input.trim() || send.isPending}
+            size="icon"
+            className="h-11 w-11 rounded-full shrink-0"
+            aria-label="Send"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
-
-        {mode === "search" ? (
-          <form onSubmit={handleSubmit} className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--app-muted))]" />
-            <Input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="e.g. pasta, curry, salad"
-              className="h-12 rounded-2xl pl-11 pr-4 bg-white border-[hsl(var(--app-border))]"
-            />
-          </form>
-        ) : (
-          <div className="space-y-3">
-            <div className="app-card-flat p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[hsl(var(--app-muted))]">
-                Cook with my pantry
-              </p>
-              <p className="text-sm text-[hsl(var(--app-foreground))] mt-1">
-                Tap to remove items you don't want to use. Expiring soon are prioritised.
-              </p>
-              {pantryChips.length === 0 ? (
-                <p className="text-sm text-[hsl(var(--app-muted))] mt-3">
-                  Add items to your pantry to use this mode.
-                </p>
-              ) : (
-                <>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {pantryChips.map((c) => {
-                      const removed = removedChips.has(c);
-                      const expiring = expiringNames.has(c.toLowerCase());
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() =>
-                            setRemovedChips((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(c)) next.delete(c);
-                              else next.add(c);
-                              return next;
-                            })
-                          }
-                          className={`text-xs font-medium px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-colors ${
-                            removed
-                              ? "bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-muted))] line-through"
-                              : expiring
-                              ? "bg-[hsl(var(--app-warning-soft,var(--app-primary-soft)))] text-[hsl(var(--app-foreground))] border border-[hsl(var(--app-border))]"
-                              : "bg-white text-[hsl(var(--app-foreground))] border border-[hsl(var(--app-border))]"
-                          }`}
-                        >
-                          {c}
-                          {expiring && !removed && <span aria-hidden>·⏱</span>}
-                          {!removed && <X className="h-3 w-3 opacity-60" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {removedChips.size > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setRemovedChips(new Set())}
-                      className="mt-3 text-xs font-semibold text-[hsl(var(--app-primary))] no-tap-highlight"
-                    >
-                      Restore all
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {activeQuery.isFetching ? (
-          <LoadingState label="Finding recipes…" />
-        ) : activeQuery.isError ? (
-          (() => {
-            const { title, description } = spoonErrorMessage(activeQuery.error);
-            return (
-              <ErrorState
-                title={title}
-                description={description}
-                onRetry={() => activeQuery.refetch()}
-              />
-            );
-          })()
-        ) : mode === "search" && !submittedQuery ? (
-          <EmptyState
-            icon={<Search className="h-5 w-5" />}
-            title="Search for a recipe"
-            description="Try 'pasta', 'chicken curry', or 'oats'."
-          />
-        ) : mode === "pantry" && activeChips.length === 0 ? (
-          <EmptyState
-            icon={<Refrigerator className="h-5 w-5" />}
-            title={pantryChips.length === 0 ? "Your pantry is empty" : "No ingredients selected"}
-            description={
-              pantryChips.length === 0
-                ? "Add items to your pantry to cook with what you have."
-                : "Restore at least one ingredient to search."
-            }
-          />
-        ) : results.length === 0 ? (
-          <EmptyState
-            title="No recipes found"
-            description={
-              mode === "search"
-                ? `Nothing matched "${submittedQuery}". Try a different keyword.`
-                : "No recipes matched your pantry. Try removing an ingredient."
-            }
-            action={
-              <Button
-                variant="outline"
-                onClick={() => activeQuery.refetch()}
-                className="rounded-xl"
-              >
-                <RefreshCw className="h-4 w-4 mr-1.5" /> Try again
-              </Button>
-            }
-          />
-        ) : (
-          <div className="grid gap-4">
-            {results.map((hit: any) => {
-              const spoonId = hit.id as number;
-              const isSaved = savedBySource.has(String(spoonId));
-              return (
-                <RecipeCard
-                  key={spoonId}
-                  saved={isSaved}
-                  saving={saveMut.isPending || unsaveMut.isPending}
-                  onToggleSave={() => toggleSave(spoonId, hit)}
-                  recipe={{
-                    spoonId,
-                    title: hit.title,
-                    image: hit.image ?? null,
-                    readyMinutes: hit.readyInMinutes ?? null,
-                    servings: hit.servings ?? null,
-                    used: hit.usedIngredientCount,
-                    missed: hit.missedIngredientCount,
-                    diets: hit.diets,
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        <p className="text-[10px] text-[hsl(var(--app-muted))] text-center pt-2 pb-1">
-          Recipe data powered by Spoonacular.
+        <p className="mt-1 text-[10px] text-[hsl(var(--app-muted))] text-center">
+          Tilda is a cooking helper, not a dietitian. Always check labels for allergies.
         </p>
       </div>
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Messages will be permanently removed. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!pendingDelete) return;
+                const id = pendingDelete;
+                setPendingDelete(null);
+                try {
+                  await deleteConvo.mutateAsync(id);
+                  if (activeId === id) setActiveId(null);
+                } catch {
+                  toast({ title: "Couldn't delete", variant: "destructive" });
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+// ---------- Intro ----------
+const ChefIntro = ({ onPick }: { onPick: (prompt: string) => void }) => (
+  <div className="app-card p-5 text-center">
+    <div className="mx-auto h-12 w-12 rounded-full bg-[hsl(var(--app-primary-soft))] grid place-items-center mb-2">
+      <ChefHat className="h-6 w-6 text-[hsl(var(--app-primary))]" />
+    </div>
+    <p className="font-semibold text-[hsl(var(--app-foreground))]">Hi, I'm Tilda 👋</p>
+    <p className="mt-1 text-sm text-[hsl(var(--app-muted))]">
+      I use your pantry to help you decide what to cook. Try one of these:
+    </p>
+    <div className="mt-3 flex flex-wrap gap-2 justify-center">
+      {STARTERS.map((s) => (
+        <button
+          key={s}
+          onClick={() => onPick(s)}
+          className="text-xs font-medium px-3 py-1.5 rounded-full bg-[hsl(var(--app-subtle))] text-[hsl(var(--app-foreground))] active:scale-95 no-tap-highlight"
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// ---------- Message bubble ----------
+const MessageBubble = ({
+  message,
+  userId,
+}: {
+  message: ChefMessage;
+  userId: string | undefined;
+}) => {
+  const isUser = message.role === "user";
+  const data = (message.data ?? {}) as unknown as ChefMessageData;
+  const recipes = data.recipes ?? [];
+  const tips = data.tips ?? [];
+  const clarify = data.clarifyingQuestion;
+
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[hsl(var(--app-primary))] text-white px-4 py-2.5 text-sm whitespace-pre-wrap">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="max-w-[90%] text-[15px] text-[hsl(var(--app-foreground))] whitespace-pre-wrap">
+        {message.content}
+      </div>
+      {clarify && (
+        <div className="max-w-[90%] rounded-2xl bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] px-4 py-2 text-sm font-medium">
+          {clarify}
+        </div>
+      )}
+      {recipes.length > 0 && (
+        <div className="space-y-3">
+          {recipes.map((r) => (
+            <ChefRecipeItem key={r.sourceId} recipe={r} userId={userId} />
+          ))}
+        </div>
+      )}
+      {tips.length > 0 && (
+        <ul className="app-card-flat p-3 text-sm text-[hsl(var(--app-foreground))] list-disc list-inside space-y-1">
+          {tips.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+// ---------- Recipe card in a Chef message ----------
+const ChefRecipeItem = ({
+  recipe,
+  userId,
+}: {
+  recipe: ChefRecipeCard;
+  userId: string | undefined;
+}) => {
+  const { data: saved = [] } = useSavedRecipes(userId);
+  const savedRow = saved.find(
+    (s) => s.recipe?.source === "spoonacular" && s.recipe.source_id === recipe.sourceId,
+  );
+  const saveMut = useSaveSpoonacularRecipe(userId);
+  const unsaveMut = useUnsaveRecipe(userId);
+
+  const spoonId = Number(recipe.sourceId);
+  const isSaved = !!savedRow;
+  const busy = saveMut.isPending || unsaveMut.isPending;
+
+  return (
+    <div className="space-y-1">
+      <RecipeCard
+        recipe={{
+          spoonId,
+          title: recipe.title,
+          image: recipe.image,
+          readyMinutes: recipe.readyMinutes,
+          servings: recipe.servings,
+          diets: recipe.diets,
+          used: recipe.pantryUsed.length || undefined,
+          missed: recipe.missing.length || undefined,
+        }}
+        saved={isSaved}
+        saving={busy}
+        onToggleSave={() => {
+          if (busy) return;
+          if (isSaved && savedRow) {
+            unsaveMut.mutate(savedRow.id, {
+              onError: () => toast({ title: "Couldn't unsave", variant: "destructive" }),
+            });
+          } else {
+            saveMut.mutate(
+              { id: spoonId, title: recipe.title, image: recipe.image ?? undefined } as any,
+              { onError: () => toast({ title: "Couldn't save", variant: "destructive" }) },
+            );
+          }
+        }}
+      />
+      {(recipe.expiringUsed.length > 0 || recipe.reason) && (
+        <div className="px-1 space-y-1">
+          {recipe.expiringUsed.length > 0 && (
+            <p className="text-[11px] font-medium text-[hsl(var(--app-primary))]">
+              Uses expiring soon: {recipe.expiringUsed.join(", ")}
+            </p>
+          )}
+          {recipe.reason && (
+            <p className="text-xs text-[hsl(var(--app-muted))] line-clamp-2">{recipe.reason}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
