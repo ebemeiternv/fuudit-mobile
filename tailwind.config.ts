@@ -18,6 +18,11 @@ export default {
 				'2xl': '1400px'
 			}
 		},
+		screens: {
+			// Custom breakpoint for the tightest phones (≤360 px).
+			// Below `xs`, six-tab BottomNav labels collapse to icons-only.
+			xs: '360px',
+		},
 		extend: {
 			colors: {
 				border: 'hsl(var(--border))',
