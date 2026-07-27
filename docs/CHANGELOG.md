@@ -1,5 +1,42 @@
 # Fuudit Changelog
 
+## Profile — Interactive rows fix
+
+**Symptom.** On iPhone Safari and the installed PWA, Profile rows (Household, Dietary preferences, Notifications, Privacy, Preferences, Help & support) looked tappable but did nothing. Only "Saved recipes" navigated.
+
+**Root cause.** The rows were rendered as `<button>` elements but had no `onClick` handler and no destination. There was no overlay, z-index, or pointer-events issue — the handlers were simply never wired up. The stray `Preferences` row also had no home in the current data model.
+
+**Rows implemented.**
+- **Saved recipes** — unchanged; navigates to `/app/saved`.
+- **Household** — opens `HouseholdSheet`. Edits `display_name` and `household_size` via the existing `useUpdateProfile` mutation. Cache is updated on success so the row and greeting refresh immediately.
+- **Dietary preferences** — opens `DietarySheet`. Multi-select chips for diet and allergies mapped to Spoonacular's `diet` / `intolerances` values, so Discover and AI Chef pick the new settings up on their next request (they read `profile.dietary_preferences` / `profile.allergies` live from the same query). Includes a self-verification disclaimer.
+- **Notifications** — opens `NotificationsSheet` labeled "Coming later". No fake switches. Explains that web push is unreliable on iOS home-screen apps today.
+- **Privacy** — opens `PrivacySheet` with sections for stored data, adaptive learning, AI processing, a link to the full policy on the marketing site, and a `hello@fuudit.com` mailto for manual data/account removal during beta.
+- **Help & support** — opens `HelpSheet` with a `hello@fuudit.com` feedback mailto, FAQ link, install instructions (iOS / Android / Desktop), stuck-on-old-version guidance including the `?sw=off` kill switch, and the current build identifier.
+
+**Rows removed.** `Preferences` — no supported settings distinct from Household; removed rather than shown as broken.
+
+**Accessibility.**
+- Every row is a real `<button type="button">` with an `aria-label` including its current value.
+- Minimum height 52px (rows) / 44px (chips and steppers) to satisfy touch targets.
+- Visible pressed state (`active:bg-app-subtle`) and keyboard focus ring.
+- Icons marked `aria-hidden`; chevrons only appear on rows that open something.
+
+**Data & cache.**
+- All edits go through `profilesRepository` + `useUpdateProfile`, which writes to the `profile(userId)` query cache. Discover (`DiscoverScreen`) and Home (`HomeScreen`) both read from `useProfile` and re-derive Spoonacular params on each request, so updated diet/allergy values take effect on the next Discover query.
+- AI Chef loads the profile on each invocation server-side, so the next AI Chef message uses the latest values.
+
+**Mobile / PWA.** Sheets use shadcn `Sheet side="bottom"` which portals above the bottom nav; `safe-bottom` inset applied to sheet footers.
+
+**Known limitations.**
+- Account deletion is not exposed as a button — done manually via `hello@fuudit.com` for beta; a self-serve delete flow is remaining work.
+- Native notifications intentionally deferred.
+- Privacy sheet links to the marketing-site policy anchor; a dedicated in-app Privacy Policy page is still to come.
+
+---
+
+
+
 ## AI Chef — Reliability fix
 
 **Symptom.** Users often saw *"Sorry — I couldn't put a suggestion together just now. Try rephrasing your request."* even for simple prompts. Gateway logs showed every request returning HTTP 200 with healthy token usage — the model was answering. The bug was in the edge function.
