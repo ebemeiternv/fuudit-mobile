@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { Sparkles, Repeat } from "lucide-react";
+import { useProductIntelligence } from "@/hooks/queries/useProductIntelligence";
+import { recentlyAdded, frequentlyAdded } from "@/lib/productIntelligence";
 import { Link } from "react-router-dom";
 import {
   Plus,
@@ -84,6 +87,7 @@ const PantryScreen = () => {
   const updateMut = useUpdatePantryItem(userId);
   const deleteMut = useDeletePantryItem(userId);
   const statusMut = useSetPantryItemStatus(userId);
+  const { data: intelligence = [] } = useProductIntelligence(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -166,6 +170,16 @@ const PantryScreen = () => {
     setEditing(existing);
     setSheetOpen(true);
   };
+
+  const openQuickAdd = (name: string) => {
+    setEditing(null);
+    // Providing the name is enough — the sheet's smart-defaults hook will
+    // recognise the identity key and prefill category, unit, location and
+    // expiry from what the user usually does with this product.
+    setScanInitial({ name });
+    setSheetOpen(true);
+  };
+
 
   const handleSubmit = async (payload: Parameters<typeof createMut.mutateAsync>[0]) => {
     if (editing) {
@@ -333,6 +347,44 @@ const PantryScreen = () => {
             ))}
           </div>
         )}
+
+        {/* Adaptive learning surfaces — only shown when we actually have signal. */}
+        {(() => {
+          const frequent = frequentlyAdded(intelligence, 8);
+          const recent = recentlyAdded(intelligence, 8);
+          const showFrequent = frequent.length > 0;
+          const showRecent = recent.length > 0 && !showFrequent;
+          if (!showFrequent && !showRecent) return null;
+          const list = showFrequent ? frequent : recent;
+          const label = showFrequent ? "Frequently added" : "Recently added";
+          const Icon = showFrequent ? Repeat : Sparkles;
+          return (
+            <section aria-label={label}>
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <Icon className="h-3.5 w-3.5 text-[hsl(var(--app-primary))]" />
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-[hsl(var(--app-muted))]">
+                  {label}
+                </h2>
+              </div>
+              <div className="-mx-5 px-5 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2 pb-1 w-max">
+                  {list.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => openQuickAdd(entry.displayName)}
+                      className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-white border border-[hsl(var(--app-border))] text-sm font-medium text-[hsl(var(--app-foreground))] whitespace-nowrap no-tap-highlight active:scale-95 transition-transform"
+                    >
+                      <span className="max-w-[14ch] truncate">{entry.displayName}</span>
+                      <span className="text-[hsl(var(--app-muted))]">+</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
 
         {/* Content */}
         {isLoading ? (

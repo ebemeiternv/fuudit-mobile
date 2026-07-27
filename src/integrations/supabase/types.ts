@@ -309,6 +309,99 @@ export type Database = {
         }
         Relationships: []
       }
+      product_intelligence: {
+        Row: {
+          avg_consumption_days: number | null
+          avg_discard_days: number | null
+          avg_purchase_interval_days: number | null
+          barcode: string | null
+          consumption_count: number
+          created_at: string
+          discard_count: number
+          display_name: string
+          id: string
+          identity_key: string
+          last_consumed_at: string | null
+          last_discarded_at: string | null
+          last_purchased_at: string | null
+          observations: number
+          preferred_category: string | null
+          preferred_expiry_offset_days: number | null
+          preferred_location:
+            | Database["public"]["Enums"]["pantry_location"]
+            | null
+          preferred_package_quantity: number | null
+          preferred_package_unit:
+            | Database["public"]["Enums"]["unit_type"]
+            | null
+          preferred_quantity: number | null
+          preferred_unit: Database["public"]["Enums"]["unit_type"] | null
+          purchase_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_consumption_days?: number | null
+          avg_discard_days?: number | null
+          avg_purchase_interval_days?: number | null
+          barcode?: string | null
+          consumption_count?: number
+          created_at?: string
+          discard_count?: number
+          display_name: string
+          id?: string
+          identity_key: string
+          last_consumed_at?: string | null
+          last_discarded_at?: string | null
+          last_purchased_at?: string | null
+          observations?: number
+          preferred_category?: string | null
+          preferred_expiry_offset_days?: number | null
+          preferred_location?:
+            | Database["public"]["Enums"]["pantry_location"]
+            | null
+          preferred_package_quantity?: number | null
+          preferred_package_unit?:
+            | Database["public"]["Enums"]["unit_type"]
+            | null
+          preferred_quantity?: number | null
+          preferred_unit?: Database["public"]["Enums"]["unit_type"] | null
+          purchase_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_consumption_days?: number | null
+          avg_discard_days?: number | null
+          avg_purchase_interval_days?: number | null
+          barcode?: string | null
+          consumption_count?: number
+          created_at?: string
+          discard_count?: number
+          display_name?: string
+          id?: string
+          identity_key?: string
+          last_consumed_at?: string | null
+          last_discarded_at?: string | null
+          last_purchased_at?: string | null
+          observations?: number
+          preferred_category?: string | null
+          preferred_expiry_offset_days?: number | null
+          preferred_location?:
+            | Database["public"]["Enums"]["pantry_location"]
+            | null
+          preferred_package_quantity?: number | null
+          preferred_package_unit?:
+            | Database["public"]["Enums"]["unit_type"]
+            | null
+          preferred_quantity?: number | null
+          preferred_unit?: Database["public"]["Enums"]["unit_type"] | null
+          purchase_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allergies: string[] | null

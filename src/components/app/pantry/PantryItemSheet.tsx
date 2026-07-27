@@ -38,6 +38,9 @@ import {
   type PantryLocation,
   type UnitType,
 } from "@/lib/pantry";
+import { Sparkles } from "lucide-react";
+import { useSmartDefaults } from "@/hooks/queries/useProductIntelligence";
+import { useAuth } from "@/hooks/useAuth";
 import type { PantryItem } from "@/repositories/pantry";
 
 const schema = z.object({
@@ -119,8 +122,35 @@ type Props = {
 };
 
 const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, saving }: Props) => {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Track which fields the user has touched so learned defaults never
+  // clobber intentional entries.
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [prefillApplied, setPrefillApplied] = useState(false);
+
+  // Only run intelligence lookup when adding a new item (not editing) and
+  // we have some identity signal to work with.
+  const isNew = !item;
+  const lookupName = isNew ? form.name : "";
+  const lookupBarcode = isNew ? form.barcode : "";
+  const { data: defaults } = useSmartDefaults(
+    user?.id,
+    {
+      barcode: lookupBarcode || null,
+      name: lookupName || null,
+      productHints: {
+        category: (initialValues?.category as string | undefined) ?? null,
+        package_quantity: initialValues?.package_quantity
+          ? Number(initialValues.package_quantity)
+          : null,
+        package_unit:
+          (initialValues?.package_unit as UnitType | undefined) ?? null,
+      },
+    },
+    isNew && (Boolean(lookupBarcode) || (lookupName?.trim().length ?? 0) >= 3),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -154,10 +184,37 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
       setForm({ ...empty, ...(initialValues ?? {}) });
     }
     setErrors({});
+    setTouched({});
+    setPrefillApplied(false);
   }, [open, item, initialValues]);
 
-  const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
+  // Fill blank fields from learned defaults exactly once per open. Never
+  // overwrite anything the user has touched or that already came from a scan.
+  useEffect(() => {
+    if (!open || !isNew || !defaults || prefillApplied) return;
+    setForm((f) => {
+      const next = { ...f };
+      if (!f.category && !touched.category && defaults.category)
+        next.category = defaults.category;
+      if (!touched.location && defaults.location) next.location = defaults.location;
+      if (!f.quantity && !touched.quantity && defaults.quantity != null)
+        next.quantity = String(defaults.quantity);
+      if (!f.unit && !touched.unit && defaults.unit) next.unit = defaults.unit;
+      if (
+        !f.expires_on &&
+        !touched.expires_on &&
+        defaults.suggested_expires_on
+      )
+        next.expires_on = defaults.suggested_expires_on;
+      return next;
+    });
+    setPrefillApplied(true);
+  }, [open, isNew, defaults, prefillApplied, touched]);
+
+  const set = <K extends keyof FormState>(key: K, val: FormState[K]) => {
+    setTouched((t) => ({ ...t, [key]: true }));
     setForm((f) => ({ ...f, [key]: val }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,6 +393,61 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
                 </Select>
               </div>
             </div>
+
+            {isNew && defaults && (defaults.suggested_expires_on || defaults.confidence !== "none") && (
+              <div className="rounded-2xl border border-[hsl(var(--app-border))] bg-[hsl(var(--app-subtle))] p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[hsl(var(--app-foreground))]">
+                  <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--app-primary))]" />
+                  {defaults.expiry_source === "learned"
+                    ? "You usually keep this fresh for a while — try one of these:"
+                    : defaults.expiry_source === "category"
+                      ? "Common shelf life for this category:"
+                      : "Quick expiry:"}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {defaults.suggested_expires_on && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        set("expires_on", defaults.suggested_expires_on!)
+                      }
+                      className={cn(
+                        "px-3 h-8 rounded-full text-xs font-medium border transition-colors no-tap-highlight",
+                        form.expires_on === defaults.suggested_expires_on
+                          ? "bg-[hsl(var(--app-primary))] text-white border-[hsl(var(--app-primary))]"
+                          : "bg-white text-[hsl(var(--app-foreground))] border-[hsl(var(--app-border))]",
+                      )}
+                    >
+                      {defaults.expiry_offset_days} day{defaults.expiry_offset_days === 1 ? "" : "s"}
+                    </button>
+                  )}
+                  {[3, 7, 14].map((n) => {
+                    const iso = (() => {
+                      const d = new Date();
+                      d.setHours(0, 0, 0, 0);
+                      d.setDate(d.getDate() + n);
+                      return toLocalDateString(d);
+                    })();
+                    if (iso === defaults.suggested_expires_on) return null;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => set("expires_on", iso)}
+                        className={cn(
+                          "px-3 h-8 rounded-full text-xs font-medium border transition-colors no-tap-highlight",
+                          form.expires_on === iso
+                            ? "bg-[hsl(var(--app-primary))] text-white border-[hsl(var(--app-primary))]"
+                            : "bg-white text-[hsl(var(--app-foreground))] border-[hsl(var(--app-border))]",
+                        )}
+                      >
+                        +{n} days
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

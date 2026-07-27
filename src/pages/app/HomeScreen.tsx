@@ -5,6 +5,8 @@ import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
 import { useMealPlan } from "@/hooks/queries/useMealPlan";
 import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
+import { useProductIntelligence } from "@/hooks/queries/useProductIntelligence";
+import { pickAmbientHint } from "@/lib/productIntelligence";
 import { todayLocalIso } from "@/lib/dates";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
@@ -32,6 +34,8 @@ const HomeScreen = () => {
   const todayIso = todayLocalIso();
   const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
   const { data: groceryItems = [] } = useGroceryItems(user?.id);
+  const { data: intelligence = [] } = useProductIntelligence(user?.id);
+  const ambientHint = pickAmbientHint(intelligence);
   const pendingGrocery = groceryItems.filter((i) => !i.checked).length;
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
@@ -101,6 +105,26 @@ const HomeScreen = () => {
             </>
           )}
         </div>
+
+        {ambientHint && (
+          <Link
+            to="/app/pantry"
+            className="app-card p-4 flex items-start gap-3 no-tap-highlight active:scale-[0.99] transition-transform border border-[hsl(var(--app-primary))]/20 bg-[hsl(var(--app-primary-soft))]/60"
+          >
+            <div className="h-9 w-9 rounded-xl bg-white text-[hsl(var(--app-primary))] grid place-items-center shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--app-primary))]">
+                Smart insight
+              </p>
+              <p className="text-sm text-[hsl(var(--app-foreground))] mt-0.5">
+                {ambientHint.message}
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))] mt-1" />
+          </Link>
+        )}
 
         {/* Today's meals */}
         <section>
