@@ -107,6 +107,13 @@ type Props = {
     purchased_on: string | null;
     expires_on: string | null;
     notes: string | null;
+    barcode?: string | null;
+    brand?: string | null;
+    product_image_url?: string | null;
+    product_source?: string | null;
+    product_source_id?: string | null;
+    package_quantity?: number | null;
+    package_unit?: UnitType | null;
   }) => Promise<void>;
   saving?: boolean;
 };
@@ -119,6 +126,7 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
     if (!open) return;
     if (item) {
       setForm({
+        ...empty,
         name: item.name,
         quantity: item.quantity != null ? String(item.quantity) : "",
         unit: (item.unit as UnitType) ?? "",
@@ -127,6 +135,20 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         purchased_on: item.purchased_on ?? "",
         expires_on: item.expires_on ?? "",
         notes: item.notes ?? "",
+        barcode: (item as { barcode?: string | null }).barcode ?? "",
+        brand: (item as { brand?: string | null }).brand ?? "",
+        product_image_url:
+          (item as { product_image_url?: string | null }).product_image_url ?? "",
+        product_source:
+          (item as { product_source?: string | null }).product_source ?? "",
+        product_source_id:
+          (item as { product_source_id?: string | null }).product_source_id ?? "",
+        package_quantity:
+          (item as { package_quantity?: number | null }).package_quantity != null
+            ? String((item as { package_quantity?: number | null }).package_quantity)
+            : "",
+        package_unit:
+          ((item as { package_unit?: UnitType | null }).package_unit as UnitType) ?? "",
       });
     } else {
       setForm({ ...empty, ...(initialValues ?? {}) });
@@ -158,6 +180,13 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         purchased_on: form.purchased_on || null,
         expires_on: form.expires_on || null,
         notes: form.notes?.trim() || null,
+        barcode: form.barcode || null,
+        brand: form.brand || null,
+        product_image_url: form.product_image_url || null,
+        product_source: form.product_source || null,
+        product_source_id: form.product_source_id || null,
+        package_quantity: form.package_quantity ? Number(form.package_quantity) : null,
+        package_unit: form.package_unit ? (form.package_unit as UnitType) : null,
       });
       onOpenChange(false);
     } catch (err) {
