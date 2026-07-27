@@ -155,7 +155,7 @@ const PantryScreen = () => {
   const handleDelete = async () => {
     if (!pendingDelete) return;
     try {
-      await deleteMut.mutateAsync(pendingDelete.id);
+      await deleteMut.mutateAsync(pendingDelete);
       toast({ title: "Item deleted" });
     } catch (e) {
       toast({
@@ -170,7 +170,7 @@ const PantryScreen = () => {
 
   const handleStatus = async (item: PantryItem, status: "consumed" | "discarded") => {
     try {
-      await statusMut.mutateAsync({ id: item.id, status });
+      await statusMut.mutateAsync({ item, status });
       toast({
         title: status === "consumed" ? "Marked as consumed" : "Marked as discarded",
       });
