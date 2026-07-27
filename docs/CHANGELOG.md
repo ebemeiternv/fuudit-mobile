@@ -294,3 +294,52 @@
 - Category inference from ingredient names is heuristic; users can override in review or in edit.
 - No barcode/camera/receipt scanning (planned Slice 7).
 - No automatic pantry deduction on cook, no auto-generation on meal-plan change, no household sharing.
+
+## Slice 9 — Installable PWA and Mobile App Experience
+
+### PWA tooling
+- Added `vite-plugin-pwa` (generateSW / Workbox) with `workbox-window` for update messaging.
+- Service worker filename: `/sw.js`. Manifest: `/manifest.webmanifest` (auto-injected).
+
+### Manifest
+- `name: Fuudit`, `short_name: Fuudit`, `start_url: /`, `scope: /`, `display: standalone`, `orientation: portrait-primary`.
+- Theme color `#327853` (Fuudit sage), background `#fafaf7`.
+- Icons: 192, 512 (any) + 512 maskable.
+
+### Icon and splash assets
+- New PWA icon set in `public/icons/`: `icon-192.png`, `icon-512.png`, `maskable-512.png`, `apple-touch-icon.png`, `favicon-16/32.png`. Generated from the Fuudit sage-green "F" mark with generous safe padding for maskable cropping.
+
+### Installation experience
+- Android / desktop Chrome: captures `beforeinstallprompt`, shows a small landing-page install pill and a "Install Fuudit" row in Profile → triggers native prompt on explicit tap. Dismissal stores a 7-day cooldown.
+- iOS Safari: opens a lightweight sheet with "Tap Share → Add to Home Screen → Add".
+- Already-installed / standalone: all install surfaces are hidden.
+
+### Service worker and caching
+- `NetworkFirst` for HTML navigations (4s timeout), Google Fonts stylesheets `StaleWhileRevalidate`, `gstatic` fonts `CacheFirst`.
+- Recipe images (Spoonacular / Open Food Facts) `StaleWhileRevalidate` with a small entry limit.
+- Precache limited to hashed JS/CSS/HTML/icons/fonts of the app shell.
+- No authenticated API responses are cached at the SW layer. TanStack Query continues to manage private data in memory.
+- Navigation fallback denylist excludes `/~oauth`, `/api/*`, `/functions/v1/*`.
+
+### Offline & reconnection
+- Global `OfflineBanner` shows "You're offline…" and a brief "Back online" flash on reconnect. AI Chef, Spoonacular search, and Open Food Facts lookups fail gracefully via existing error toasts when offline; no silent success.
+
+### Updates
+- `registerType: autoUpdate` with `skipWaiting: false`. When a new SW is waiting, `UpdatePrompt` shows a small "A new version of Fuudit is ready — Update" pill; reload happens only on user action.
+
+### Auth, routing, privacy
+- `signOut()` now calls `queryClient.clear()` so the next user on the same device cannot see the previous user's cached private UI state.
+- SPA deep-link refresh handled by Lovable hosting fallback + Workbox `navigateFallback`.
+- Registration wrapper refuses SW in dev, iframes, Lovable previews, and when `?sw=off` is present (kill switch), and unregisters any stale app SW in those contexts.
+
+### Barcode scanner PWA notes
+- `BarcodeDetector` continues to work in supported Android Chromium browsers when launched from the home screen.
+- iOS standalone still lacks `BarcodeDetector`; manual entry remains the fallback. No native scanner plugin added in this slice.
+
+### Landing page
+- `MobileAvailability` copy updated: "Use Fuudit in your browser or add it to your phone's home screen … Native iPhone and Android apps are on our roadmap."
+
+### Known limitations
+- No background sync of failed mutations. Offline writes are not queued.
+- iOS installability is manual (Add to Home Screen) — expected browser behaviour.
+- No native push notifications, Capacitor, or App Store / Play submission in this slice.
