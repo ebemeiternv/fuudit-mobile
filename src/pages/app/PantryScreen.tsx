@@ -229,6 +229,13 @@ const PantryScreen = () => {
               <HistoryIcon className="h-5 w-5 text-[hsl(var(--app-foreground))]" />
             </Link>
             <button
+              onClick={openScan}
+              aria-label="Scan barcode"
+              className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center no-tap-highlight active:scale-95 transition-transform"
+            >
+              <ScanLine className="h-5 w-5 text-[hsl(var(--app-foreground))]" />
+            </button>
+            <button
               onClick={openAdd}
               aria-label="Add pantry item"
               className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
