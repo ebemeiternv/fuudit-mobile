@@ -308,6 +308,29 @@ const RecipeDetailScreen = () => {
         </p>
       </div>
 
+      {/*
+        Sticky action bar: the primary "Add to meal plan" action must stay
+        reachable with one hand — long recipes would otherwise hide it below
+        the fold. Sits above the bottom nav via var(--app-nav-h) and respects
+        the iOS home-indicator inset. Radix Sheet is z-50; this bar is z-30 so
+        the Add-to-Meal-Plan sheet renders over it.
+      */}
+      <div
+        className="fixed inset-x-0 z-30 border-t border-[hsl(var(--app-border))] bg-white/95 backdrop-blur px-4 pt-3 hide-when-modal"
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--app-nav-h, 68px))",
+          paddingBottom: "0.75rem",
+        }}
+      >
+        <Button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="h-12 w-full rounded-2xl bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white font-semibold shadow-md"
+        >
+          <CalendarPlus className="h-4 w-4 mr-2" aria-hidden="true" /> Add to meal plan
+        </Button>
+      </div>
+
       <AddToMealPlanSheet
         open={addOpen}
         onOpenChange={setAddOpen}
