@@ -122,8 +122,35 @@ type Props = {
 };
 
 const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, saving }: Props) => {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Track which fields the user has touched so learned defaults never
+  // clobber intentional entries.
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [prefillApplied, setPrefillApplied] = useState(false);
+
+  // Only run intelligence lookup when adding a new item (not editing) and
+  // we have some identity signal to work with.
+  const isNew = !item;
+  const lookupName = isNew ? form.name : "";
+  const lookupBarcode = isNew ? form.barcode : "";
+  const { data: defaults } = useSmartDefaults(
+    user?.id,
+    {
+      barcode: lookupBarcode || null,
+      name: lookupName || null,
+      productHints: {
+        category: (initialValues?.category as string | undefined) ?? null,
+        package_quantity: initialValues?.package_quantity
+          ? Number(initialValues.package_quantity)
+          : null,
+        package_unit:
+          (initialValues?.package_unit as UnitType | undefined) ?? null,
+      },
+    },
+    isNew && (Boolean(lookupBarcode) || (lookupName?.trim().length ?? 0) >= 3),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -157,10 +184,37 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
       setForm({ ...empty, ...(initialValues ?? {}) });
     }
     setErrors({});
+    setTouched({});
+    setPrefillApplied(false);
   }, [open, item, initialValues]);
 
-  const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
+  // Fill blank fields from learned defaults exactly once per open. Never
+  // overwrite anything the user has touched or that already came from a scan.
+  useEffect(() => {
+    if (!open || !isNew || !defaults || prefillApplied) return;
+    setForm((f) => {
+      const next = { ...f };
+      if (!f.category && !touched.category && defaults.category)
+        next.category = defaults.category;
+      if (!touched.location && defaults.location) next.location = defaults.location;
+      if (!f.quantity && !touched.quantity && defaults.quantity != null)
+        next.quantity = String(defaults.quantity);
+      if (!f.unit && !touched.unit && defaults.unit) next.unit = defaults.unit;
+      if (
+        !f.expires_on &&
+        !touched.expires_on &&
+        defaults.suggested_expires_on
+      )
+        next.expires_on = defaults.suggested_expires_on;
+      return next;
+    });
+    setPrefillApplied(true);
+  }, [open, isNew, defaults, prefillApplied, touched]);
+
+  const set = <K extends keyof FormState>(key: K, val: FormState[K]) => {
+    setTouched((t) => ({ ...t, [key]: true }));
     setForm((f) => ({ ...f, [key]: val }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
