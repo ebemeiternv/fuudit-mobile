@@ -62,6 +62,18 @@ const errorMessage: Record<ScannerErrorCode, string> = {
   unknown: "Camera failed. Enter the barcode manually.",
 };
 
+// iOS Safari (and installed PWAs) don't ship BarcodeDetector in the web view.
+// We detect it so we can show honest, iPhone-specific wording instead of a
+// generic "unsupported" error.
+const isIosLike = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ reports as Mac; detect touch-enabled Macs as iPad.
+  const iPadOs = ua.includes("Macintosh") && (navigator as { maxTouchPoints?: number }).maxTouchPoints! > 1;
+  return iOS || iPadOs;
+};
+
 const productToPrefill = (p: NormalizedProduct): ScannedInitialValues => {
   const category = mapCategory(p.categories);
   // Prefer the recognized retail unit; fall back to piece so quantity has meaning.
