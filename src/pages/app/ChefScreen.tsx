@@ -34,6 +34,8 @@ import type { ChefMessage, ChefMessageData, ChefRecipeCard } from "@/repositorie
 import { useSavedRecipes, useUnsaveRecipe } from "@/hooks/queries/useSavedRecipes";
 import { useSaveSpoonacularRecipe } from "@/hooks/queries/useRecipes";
 import RecipeCard from "@/components/app/recipes/RecipeCard";
+import AddToMealPlanSheet from "@/components/app/mealplan/AddToMealPlanSheet";
+import type { AddToMealPlanPayload } from "@/hooks/queries/useMealPlan";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -378,10 +380,19 @@ const ChefRecipeItem = ({
   );
   const saveMut = useSaveSpoonacularRecipe(userId);
   const unsaveMut = useUnsaveRecipe(userId);
+  const [addOpen, setAddOpen] = useState(false);
 
   const spoonId = Number(recipe.sourceId);
   const isSaved = !!savedRow;
   const busy = saveMut.isPending || unsaveMut.isPending;
+
+  const planPayload: AddToMealPlanPayload = savedRow?.recipe
+    ? { kind: "recipe", recipeId: savedRow.recipe.id }
+    : {
+        kind: "spoon",
+        spoonId,
+        hint: { title: recipe.title, image: recipe.image ?? null },
+      };
 
   return (
     <div className="space-y-1">
@@ -401,7 +412,7 @@ const ChefRecipeItem = ({
         onToggleSave={() => {
           if (busy) return;
           if (isSaved && savedRow) {
-            unsaveMut.mutate(savedRow.id, {
+            unsaveMut.mutate(savedRow.recipe!.id, {
               onError: () => toast({ title: "Couldn't unsave", variant: "destructive" }),
             });
           } else {
@@ -411,6 +422,7 @@ const ChefRecipeItem = ({
             );
           }
         }}
+        onAddToPlan={() => setAddOpen(true)}
       />
       {(recipe.expiringUsed.length > 0 || recipe.reason) && (
         <div className="px-1 space-y-1">
@@ -424,6 +436,12 @@ const ChefRecipeItem = ({
           )}
         </div>
       )}
+      <AddToMealPlanSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        payload={planPayload}
+        title={recipe.title}
+      />
     </div>
   );
 };

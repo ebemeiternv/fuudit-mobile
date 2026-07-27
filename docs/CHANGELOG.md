@@ -204,3 +204,52 @@
 - Spoonacular integration + recipe caching.
 - AI Chef edge function using pantry context.
 - Wire Chef conversation persistence to the screen.
+
+## Slice 5 — Functional Meal Plan
+
+### Schema
+- `meal_plan_entries`: added `custom_title text` (nullable) to support custom meals without a linked recipe.
+- Added check constraint `meal_plan_entries_has_content`: every entry must have either a `recipe_id` or a non-empty `custom_title`.
+- Added `BEFORE UPDATE` trigger `meal_plan_entries_set_updated_at` to keep `updated_at` fresh.
+- Added `meal_plan_entries_user_date_idx` on `(user_id, date)` for efficient week-range reads.
+- RLS unchanged — owner-scoped ALL policy already covers the new column.
+
+### Repository & hooks
+- `src/repositories/mealPlan.ts`: `listRange` now joins `recipes` (`*, recipe:recipes(*)`) and sorts by date then created_at; returns `MealPlanEntryWithRecipe`.
+- `src/hooks/queries/useMealPlan.ts`: added `useAddToMealPlan` — unified mutation accepting `{ kind: "recipe" | "spoon" | "custom" }` payloads that caches Spoonacular recipes locally before writing the meal-plan row. Query stale time set to 30s; invalidation still keyed on `["mealPlan", userId]`.
+- `src/lib/dates.ts` (new): timezone-safe helpers (`toLocalIsoDate`, `parseLocalIsoDate`, `addDays`, `startOfWeekMonday`, `isSameLocalDate`, `todayLocalIso`, `shortWeekday`, `humanDate`, `shortHumanDate`).
+
+### Reusable add-to-plan flow
+- **New** `src/components/app/mealplan/AddToMealPlanSheet.tsx` — one bottom-sheet used by every surface (Recipe Detail, Saved, AI Chef, Meal Plan itself). Fields: 14-day date strip, meal slot chips, servings stepper (defaults from `profiles.household_size`), notes, custom title (when applicable). Doubles as an edit / move sheet for existing entries.
+- Duplicate-tap safety: submit button disabled while the mutation is pending.
+
+### Meal Plan screen
+- **Rewrote** `src/pages/app/MealPlanScreen.tsx` — real data by week range, prev/next week arrows, "Jump to today", weekly day selector with today marker and per-day count dots, meals grouped by slot (Breakfast / Lunch / Dinner / Snack), empty-slot CTAs, add button per slot, edit/move/remove via dropdown + confirmation dialog. Loading and error states via shared components.
+- **New** `src/components/app/mealplan/MealPlanEntryCard.tsx` — entry card with image (or emoji fallback), title, servings, ready time, notes, custom badge, action menu, and delete confirmation.
+
+### Recipe / Chef integrations
+- `RecipeCard`: added optional `onAddToPlan` — renders a compact "Add to meal plan" pill under the card meta line. Kept optional so Discovery cards remain uncluttered.
+- `SavedRecipesScreen`: wires each saved card to open the shared sheet with the local recipe id.
+- `ChefScreen` recipe cards: added explicit `Add to meal plan` action (uses local recipe id when already saved, otherwise caches Spoonacular id first). The AI edge function does NOT gain meal-plan write permission — writes are user-initiated only.
+- `RecipeDetailScreen`: primary "Add to meal plan" button under the header meta.
+
+### Home integration
+- Replaced the static meal-plan placeholder with a real "Today's meals" section using `useMealPlan(userId, todayIso, todayIso)`. Empty state links to `/app/meal-plan` with a CTA. Existing sections untouched.
+
+### Date & timezone handling
+- All plan dates are stored and compared as `YYYY-MM-DD` derived from the user's local calendar (`toLocalIsoDate`), never from `toISOString()`. Week boundaries use Monday start via `startOfWeekMonday`.
+
+### Query & caching strategy
+- Range key: `["mealPlan", userId, from, to]`.
+- Any create / update / delete invalidates `["mealPlan", userId]` (matches every visible week).
+- Recipes fetched from Spoonacular by `useAddToMealPlan` are upserted into the `recipes` cache so the same recipe can be linked from later plan entries without another API call.
+
+### Known limitations
+- Move is implemented via the edit sheet (change date/slot); no drag-and-drop.
+- No optimistic UI on create/update/delete — TanStack invalidation is fast enough on mobile and avoids rollback complexity in this slice.
+- Servings default from household size but do not auto-scale recipe ingredients yet (Slice 6).
+- Home shows all of today's entries in insertion order; no slot ordering (breakfast → snack).
+
+### Remaining Slice 6 (Grocery) work
+- Generate grocery items from planned meals, subtract pantry, deduplicate, unit-normalise.
+- Auto pantry deduction on meal completion (still TBD scope).

@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import { usePantryImpact } from "@/hooks/queries/usePantryImpact";
+import { useMealPlan } from "@/hooks/queries/useMealPlan";
+import { todayLocalIso } from "@/lib/dates";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import {
   ArrowRight,
@@ -12,6 +14,7 @@ import {
   ShoppingBag,
   Plus,
   Sparkles,
+  CalendarDays,
 } from "lucide-react";
 import {
   daysUntilExpiry,
@@ -25,6 +28,8 @@ const HomeScreen = () => {
   const { data: profile } = useProfile(user?.id);
   const { data: pantry = [], isLoading: pantryLoading } = usePantryItems(user?.id);
   const impact = usePantryImpact(user?.id);
+  const todayIso = todayLocalIso();
+  const { data: todaysMeals = [] } = useMealPlan(user?.id, todayIso, todayIso);
 
   const name = profile?.display_name || user?.email?.split("@")[0] || "";
   const hour = new Date().getHours();
@@ -94,7 +99,77 @@ const HomeScreen = () => {
           )}
         </div>
 
-        {/* Expiring soon */}
+        {/* Today's meals */}
+        <section>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h2 className="text-lg font-bold text-[hsl(var(--app-foreground))]">Today's meals</h2>
+            <Link
+              to="/app/meal-plan"
+              className="text-sm font-semibold text-[hsl(var(--app-primary))] flex items-center gap-1 no-tap-highlight"
+            >
+              Meal plan <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {todaysMeals.length === 0 ? (
+            <Link
+              to="/app/meal-plan"
+              className="app-card p-5 flex items-center gap-3 no-tap-highlight active:scale-[0.99] transition-transform"
+            >
+              <div className="h-11 w-11 rounded-xl bg-[hsl(var(--app-accent-sky-soft))] text-[hsl(var(--app-primary))] grid place-items-center">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-[hsl(var(--app-foreground))]">
+                  Plan today's meals
+                </p>
+                <p className="text-xs text-[hsl(var(--app-muted))]">
+                  Line up breakfast, lunch, dinner or a snack.
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))]" />
+            </Link>
+          ) : (
+            <div className="app-card divide-y divide-[hsl(var(--app-border))]">
+              {todaysMeals.map((entry) => {
+                const title = entry.recipe?.title ?? entry.custom_title ?? "Untitled";
+                const to = entry.recipe
+                  ? `/app/recipes/local/${entry.recipe.id}`
+                  : "/app/meal-plan";
+                return (
+                  <Link
+                    key={entry.id}
+                    to={to}
+                    className="flex items-center gap-3 p-4 no-tap-highlight active:bg-[hsl(var(--app-subtle))]"
+                  >
+                    <div className="h-10 w-10 rounded-xl overflow-hidden bg-[hsl(var(--app-primary-soft))] grid place-items-center text-[hsl(var(--app-primary))]">
+                      {entry.recipe?.image ? (
+                        <img
+                          src={entry.recipe.image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <CalendarDays className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(var(--app-primary))]">
+                        {entry.meal_type}
+                      </p>
+                      <p className="font-semibold text-[hsl(var(--app-foreground))] truncate">
+                        {title}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-[hsl(var(--app-muted))]" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
             <h2 className="text-lg font-bold text-[hsl(var(--app-foreground))]">Use these soon</h2>

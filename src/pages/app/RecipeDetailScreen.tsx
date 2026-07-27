@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   Bookmark,
   BookmarkCheck,
   ExternalLink,
+  CalendarPlus,
 } from "lucide-react";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import LoadingState from "@/components/app/states/LoadingState";
@@ -21,6 +22,9 @@ import { spoonErrorMessage } from "@/lib/spoonErrors";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "@/hooks/use-toast";
 import type { NormalizedIngredient } from "@/lib/spoonacular";
+import AddToMealPlanSheet from "@/components/app/mealplan/AddToMealPlanSheet";
+import type { AddToMealPlanPayload } from "@/hooks/queries/useMealPlan";
+import { Button } from "@/components/ui/button";
 
 type Step = { number: number; step: string };
 
@@ -32,6 +36,7 @@ const RecipeDetailScreen = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const { data: saved = [] } = useSavedRecipes(userId);
+  const [addOpen, setAddOpen] = useState(false);
 
   const input = useMemo(() => {
     if (!source || !id) return null;
@@ -193,7 +198,16 @@ const RecipeDetailScreen = () => {
               ))}
             </div>
           )}
+
+          <Button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="mt-4 h-11 w-full rounded-2xl bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white font-semibold"
+          >
+            <CalendarPlus className="h-4 w-4 mr-2" /> Add to meal plan
+          </Button>
         </div>
+
 
         {summaryHtml && (
           <section>
@@ -299,6 +313,18 @@ const RecipeDetailScreen = () => {
           {data.license ? `· ${data.license}` : ""}
         </p>
       </div>
+
+      <AddToMealPlanSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        payload={
+          {
+            kind: "recipe",
+            recipeId: recipe.id,
+          } as AddToMealPlanPayload
+        }
+        title={recipe.title}
+      />
     </div>
   );
 };
