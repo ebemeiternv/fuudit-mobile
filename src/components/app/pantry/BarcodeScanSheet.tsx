@@ -62,6 +62,18 @@ const errorMessage: Record<ScannerErrorCode, string> = {
   unknown: "Camera failed. Enter the barcode manually.",
 };
 
+// iOS Safari (and installed PWAs) don't ship BarcodeDetector in the web view.
+// We detect it so we can show honest, iPhone-specific wording instead of a
+// generic "unsupported" error.
+const isIosLike = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ reports as Mac; detect touch-enabled Macs as iPad.
+  const iPadOs = ua.includes("Macintosh") && (navigator as { maxTouchPoints?: number }).maxTouchPoints! > 1;
+  return iOS || iPadOs;
+};
+
 const productToPrefill = (p: NormalizedProduct): ScannedInitialValues => {
   const category = mapCategory(p.categories);
   // Prefer the recognized retail unit; fall back to piece so quantity has meaning.
@@ -233,10 +245,12 @@ const BarcodeScanSheet = ({ open, onOpenChange, userId, onPrefill, onDuplicate }
         <div className="flex flex-col">
           <SheetHeader className="px-5 pt-5 pb-2 text-left">
             <SheetTitle className="text-xl font-bold text-[hsl(var(--app-foreground))]">
-              Scan product
+              {capability === "available" ? "Scan product" : "Enter barcode"}
             </SheetTitle>
             <SheetDescription className="text-[hsl(var(--app-muted))]">
-              Point the camera at the barcode on the package.
+              {capability === "available"
+                ? "Point the camera at the barcode on the package."
+                : "Type the number under the barcode to fetch product details."}
             </SheetDescription>
           </SheetHeader>
 
@@ -275,10 +289,21 @@ const BarcodeScanSheet = ({ open, onOpenChange, userId, onPrefill, onDuplicate }
           ) : (
             <form onSubmit={submitManual} className="px-5 pt-3 space-y-4">
               {capability !== "available" && (
-                <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--app-subtle))] p-3 text-xs text-[hsl(var(--app-muted))]">
-                  <Package className="h-4 w-4 mt-0.5" />
-                  <p>Barcode camera scanning isn't available on this device or browser. Enter the number printed under the barcode.</p>
-                </div>
+                isIosLike() ? (
+                  <div className="rounded-2xl bg-[hsl(var(--app-primary-soft))] p-4 space-y-1.5">
+                    <p className="text-sm font-semibold text-[hsl(var(--app-foreground))]">
+                      Live camera scanning isn't available on iPhone yet
+                    </p>
+                    <p className="text-xs text-[hsl(var(--app-muted))] leading-relaxed">
+                      Apple's web view doesn't support in-browser barcode scanning today. Enter the number below to look up the product — native scanning is coming with the iPhone app.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--app-subtle))] p-3 text-xs text-[hsl(var(--app-muted))]">
+                    <Package className="h-4 w-4 mt-0.5" />
+                    <p>Barcode camera scanning isn't available on this device or browser. Enter the number printed under the barcode.</p>
+                  </div>
+                )
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="barcode">Barcode number</Label>

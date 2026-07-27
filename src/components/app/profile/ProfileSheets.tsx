@@ -105,7 +105,7 @@ export const HouseholdSheet = ({ open, onOpenChange }: BaseProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90dvh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle>Household</SheetTitle>
           <SheetDescription>
@@ -213,7 +213,7 @@ export const DietarySheet = ({ open, onOpenChange }: BaseProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90dvh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle>Dietary preferences</SheetTitle>
           <SheetDescription>
@@ -312,7 +312,7 @@ export const NotificationsSheet = ({ open, onOpenChange }: BaseProps) => (
 
 export const PrivacySheet = ({ open, onOpenChange }: BaseProps) => (
   <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+    <SheetContent side="bottom" className="rounded-t-3xl max-h-[90dvh] overflow-y-auto">
       <SheetHeader className="text-left">
         <SheetTitle>Privacy</SheetTitle>
         <SheetDescription>How Fuudit handles your data.</SheetDescription>
@@ -378,7 +378,7 @@ export const PrivacySheet = ({ open, onOpenChange }: BaseProps) => (
 
 export const HelpSheet = ({ open, onOpenChange }: BaseProps) => (
   <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto">
+    <SheetContent side="bottom" className="rounded-t-3xl max-h-[90dvh] overflow-y-auto">
       <SheetHeader className="text-left">
         <SheetTitle>Help & support</SheetTitle>
         <SheetDescription>We read every message.</SheetDescription>
