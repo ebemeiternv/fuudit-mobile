@@ -318,6 +318,14 @@ const MealPlanScreen = () => {
             : undefined
         }
       />
+
+      <GenerateGrocerySheet
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        defaultFrom={fromIso}
+        defaultTo={toIso}
+        existingPending={groceryItems.filter((i) => !i.checked)}
+      />
     </div>
   );
 };
