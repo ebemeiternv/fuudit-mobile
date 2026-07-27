@@ -348,6 +348,13 @@ const HomeScreen = () => {
               <p className="font-semibold text-[hsl(var(--app-foreground))]">Cook with what I have</p>
               <p className="text-xs text-[hsl(var(--app-muted))] mt-1">AI-picked recipes</p>
             </Link>
+            <Link to="/app/discover" className="app-card p-4 no-tap-highlight active:scale-[0.98] transition-transform">
+              <div className="h-10 w-10 rounded-xl bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] grid place-items-center mb-3">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <p className="font-semibold text-[hsl(var(--app-foreground))]">Discover recipes</p>
+              <p className="text-xs text-[hsl(var(--app-muted))] mt-1">Search or cook from pantry</p>
+            </Link>
             <Link to="/app/grocery" className="app-card p-4 no-tap-highlight active:scale-[0.98] transition-transform">
               <div className="h-10 w-10 rounded-xl bg-[hsl(var(--app-accent-berry-soft))] text-[hsl(var(--app-accent-berry))] grid place-items-center mb-3">
                 <ShoppingBag className="h-5 w-5" />
