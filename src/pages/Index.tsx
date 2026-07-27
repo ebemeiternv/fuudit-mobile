@@ -36,7 +36,9 @@ const Index = () => {
       </main>
       <Footer />
       <CookieConsent />
+      <LandingInstallPill />
     </div>
+
   );
 };
 
