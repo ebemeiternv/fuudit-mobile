@@ -287,10 +287,21 @@ const BarcodeScanSheet = ({ open, onOpenChange, userId, onPrefill, onDuplicate }
           ) : (
             <form onSubmit={submitManual} className="px-5 pt-3 space-y-4">
               {capability !== "available" && (
-                <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--app-subtle))] p-3 text-xs text-[hsl(var(--app-muted))]">
-                  <Package className="h-4 w-4 mt-0.5" />
-                  <p>Barcode camera scanning isn't available on this device or browser. Enter the number printed under the barcode.</p>
-                </div>
+                isIosLike() ? (
+                  <div className="rounded-2xl bg-[hsl(var(--app-primary-soft))] p-4 space-y-1.5">
+                    <p className="text-sm font-semibold text-[hsl(var(--app-foreground))]">
+                      Live camera scanning isn't available on iPhone yet
+                    </p>
+                    <p className="text-xs text-[hsl(var(--app-muted))] leading-relaxed">
+                      Apple's web view doesn't support in-browser barcode scanning today. Enter the number below to look up the product — native scanning is coming with the iPhone app.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--app-subtle))] p-3 text-xs text-[hsl(var(--app-muted))]">
+                    <Package className="h-4 w-4 mt-0.5" />
+                    <p>Barcode camera scanning isn't available on this device or browser. Enter the number printed under the barcode.</p>
+                  </div>
+                )
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="barcode">Barcode number</Label>
