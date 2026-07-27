@@ -39,4 +39,25 @@ export const groceryRepository = {
     const { error } = await supabase.from("grocery_items").delete().eq("id", id);
     if (error) throw error;
   },
+  async clearPurchased(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from("grocery_items")
+      .delete()
+      .eq("user_id", userId)
+      .eq("checked", true);
+    if (error) throw error;
+  },
+  async bulkInsert(
+    userId: string,
+    rows: Omit<GroceryItemInsert, "user_id">[],
+  ): Promise<GroceryItem[]> {
+    if (rows.length === 0) return [];
+    const payload = rows.map((r) => ({ ...r, user_id: userId }));
+    const { data, error } = await supabase
+      .from("grocery_items")
+      .insert(payload)
+      .select("*");
+    if (error) throw error;
+    return data ?? [];
+  },
 };

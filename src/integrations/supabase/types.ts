@@ -93,10 +93,13 @@ export type Database = {
       }
       grocery_items: {
         Row: {
+          category: string | null
           checked: boolean
           created_at: string
           id: string
+          meal_plan_entry_id: string | null
           name: string
+          notes: string | null
           quantity: number | null
           recipe_id: string | null
           source: string
@@ -105,10 +108,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           checked?: boolean
           created_at?: string
           id?: string
+          meal_plan_entry_id?: string | null
           name: string
+          notes?: string | null
           quantity?: number | null
           recipe_id?: string | null
           source?: string
@@ -117,10 +123,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           checked?: boolean
           created_at?: string
           id?: string
+          meal_plan_entry_id?: string | null
           name?: string
+          notes?: string | null
           quantity?: number | null
           recipe_id?: string | null
           source?: string
@@ -129,6 +138,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "grocery_items_meal_plan_entry_id_fkey"
+            columns: ["meal_plan_entry_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plan_entries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grocery_items_recipe_id_fkey"
             columns: ["recipe_id"]

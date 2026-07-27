@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag } from "lucide-react";
+import GenerateGrocerySheet from "@/components/app/grocery/GenerateGrocerySheet";
+import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import LoadingState from "@/components/app/states/LoadingState";
 import ErrorState from "@/components/app/states/ErrorState";
@@ -48,6 +50,8 @@ const MealPlanScreen = () => {
     return d;
   });
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const { data: groceryItems = [] } = useGroceryItems(userId);
 
   const weekStart = useMemo(() => startOfWeekMonday(selected), [selected]);
   const weekDays = useMemo(
