@@ -109,19 +109,28 @@ const MealPlanScreen = () => {
             : "Plan your week, meal by meal"
         }
         right={
-          <button
-            onClick={() =>
-              setSheet({
-                mode: "add",
-                date: selectedIso,
-                mealType: contextualSlot(),
-              })
-            }
-            aria-label="Add meal"
-            className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGenerateOpen(true)}
+              aria-label="Generate grocery list from meal plan"
+              className="h-11 px-3 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform no-tap-highlight"
+            >
+              <ShoppingBag className="h-4 w-4" /> List
+            </button>
+            <button
+              onClick={() =>
+                setSheet({
+                  mode: "add",
+                  date: selectedIso,
+                  mealType: contextualSlot(),
+                })
+              }
+              aria-label="Add meal"
+              className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center shadow-md no-tap-highlight active:scale-95 transition-transform"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
         }
       />
 
