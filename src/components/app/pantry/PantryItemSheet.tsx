@@ -63,6 +63,15 @@ type FormState = {
   purchased_on: string;
   expires_on: string;
   notes: string;
+  // Optional product metadata (from barcode scans). Not user-editable in the
+  // form itself, but preserved so submit can persist it.
+  barcode: string;
+  brand: string;
+  product_image_url: string;
+  product_source: string;
+  product_source_id: string;
+  package_quantity: string;
+  package_unit: UnitType | "";
 };
 
 const empty: FormState = {
@@ -74,6 +83,13 @@ const empty: FormState = {
   purchased_on: "",
   expires_on: "",
   notes: "",
+  barcode: "",
+  brand: "",
+  product_image_url: "",
+  product_source: "",
+  product_source_id: "",
+  package_quantity: "",
+  package_unit: "",
 };
 
 type Props = {
