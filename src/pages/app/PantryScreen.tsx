@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { Sparkles, Repeat } from "lucide-react";
+import { useProductIntelligence } from "@/hooks/queries/useProductIntelligence";
+import { recentlyAdded, frequentlyAdded } from "@/lib/productIntelligence";
 import { Link } from "react-router-dom";
 import {
   Plus,
