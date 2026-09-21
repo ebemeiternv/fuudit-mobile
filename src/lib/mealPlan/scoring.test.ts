@@ -23,6 +23,7 @@ const candidate = (
 ): Omit<RankedCandidate, "signals"> & { missedIngredientCount?: number | null } => ({
   id: 1,
   title: "Spinach omelette",
+  image: null,
   readyMinutes: 20,
   servings: 2,
   diets: ["vegetarian", "gluten free"],
