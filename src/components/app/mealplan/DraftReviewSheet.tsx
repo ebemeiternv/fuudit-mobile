@@ -83,6 +83,12 @@ const DraftReviewSheet = ({
     [draft, pantry, budget],
   );
 
+  if (cost) {
+    // TEMP-DIAG
+    const top = [...cost.sim.purchases].sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0)).slice(0, 12);
+    console.log("DIAG", JSON.stringify(top));
+  }
+
   if (!draft) return null;
 
   const removeMeal = (slotId: string) => {
