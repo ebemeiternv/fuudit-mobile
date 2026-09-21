@@ -132,6 +132,25 @@ describe("running inventory", () => {
     expect(sim.summary.unpricedNames).toContain("saffron threads");
     expect(sim.purchases.find((p) => p.cost == null)?.name).toBe("saffron threads");
   });
+
+  it("never prices a line that states no unit at all", () => {
+    const sim = simulatePlan(
+      [
+        meal({
+          slotId: "a",
+          ingredients: [
+            { name: "pasta", amount: 200, unit: "g" },
+            { name: "black beans", amount: 7.5, unit: null },
+          ],
+        }),
+      ],
+      [],
+      { currency: CURRENCY, resolver: bareResolver },
+    );
+    const beans = sim.purchases.find((p) => p.name === "black beans");
+    expect(beans?.cost).toBeNull();
+    expect(sim.summary.unpricedNames).toContain("black beans");
+  });
 });
 
 describe("budget envelope", () => {
