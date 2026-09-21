@@ -273,6 +273,10 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         product_source_id: form.product_source_id || null,
         package_quantity: form.package_quantity ? Number(form.package_quantity) : null,
         package_unit: form.package_unit ? (form.package_unit as UnitType) : null,
+        // Optional. Currency only travels with an actual amount.
+        price_paid: form.price_paid !== "" ? Number(form.price_paid) : null,
+        price_currency:
+          form.price_paid !== "" ? form.price_currency || profileCurrency : null,
       });
       onOpenChange(false);
     } catch (err) {
