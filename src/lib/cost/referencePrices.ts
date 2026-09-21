@@ -1,8 +1,15 @@
 // Phase 1 — category fallback reference prices.
 //
-// Last-resort magnitudes so a plan can always produce a number. These are
-// deliberately coarse, shipped in code, and always surface as
-// `category_fallback` with low confidence.
+// !! IMPORTANT — these numbers are COARSE DEVELOPMENT ESTIMATES. They are NOT
+// Swedish (or any other) retail prices, they are not sourced from any retailer,
+// price index or market survey, and they must never be presented to a user as
+// a shop price. They exist only so a plan can always produce a rough order of
+// magnitude when no better source exists.
+//
+// Consequences, enforced elsewhere in this layer:
+//   * they are the LAST source in the resolution order
+//   * they always surface as `category_fallback` with LOW confidence
+//   * any figure derived from them is labelled "estimated" in the UI
 //
 // Base currency is SEK (Fuudit's primary market). Other currencies are handled
 // by the resolver's currency policy: we only ever use a fallback price when the
