@@ -202,14 +202,20 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
             : "",
         package_unit:
           ((item as { package_unit?: UnitType | null }).package_unit as UnitType) ?? "",
+        price_paid:
+          (item as { price_paid?: number | null }).price_paid != null
+            ? String((item as { price_paid?: number | null }).price_paid)
+            : "",
+        price_currency:
+          (item as { price_currency?: string | null }).price_currency || profileCurrency,
       });
     } else {
-      setForm({ ...empty, ...(initialValues ?? {}) });
+      setForm({ ...empty, price_currency: profileCurrency, ...(initialValues ?? {}) });
     }
     setErrors({});
     setTouched({});
     setPrefillApplied(false);
-  }, [open, item, initialValues]);
+  }, [open, item, initialValues, profileCurrency]);
 
   // Fill blank fields from learned defaults exactly once per open. Never
   // overwrite anything the user has touched or that already came from a scan.
