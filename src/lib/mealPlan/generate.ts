@@ -116,6 +116,7 @@ export const fetchCandidates = async (args: {
         byId.set(r.id, {
           id: r.id,
           title: r.title,
+          image: r.image ?? null,
           readyMinutes: null, // findByIngredients omits it
           servings: null,
           diets: [],
@@ -147,6 +148,7 @@ export const fetchCandidates = async (args: {
           byId.set(r.id, {
             id: r.id,
             title: r.title,
+            image: r.image ?? existing?.image ?? null,
             readyMinutes: r.readyInMinutes ?? existing?.readyMinutes ?? null,
             servings: r.servings ?? existing?.servings ?? null,
             diets: r.diets ?? existing?.diets ?? [],
@@ -261,7 +263,7 @@ export const generateMealPlan = async (args: {
       mealType: slot.mealType,
       spoonId: cand.id,
       title: cand.title,
-      image: (cand as { image?: string | null }).image ?? null,
+      image: cand.image,
       readyMinutes: cand.readyMinutes,
       servings: constraints.servings,
       pantryUsed: cand.signals.pantryOverlap,
