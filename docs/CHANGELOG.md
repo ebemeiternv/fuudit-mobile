@@ -1,5 +1,20 @@
 # Fuudit Changelog
 
+## Budget-aware meal planning — Phase 1: cost engine + price resolver
+
+Pure logic only. No schema migration, no UI, no AI planner, no monthly budget logic.
+
+- **`src/lib/cost/types.ts`** — price/cost types. `PriceSource` = `personal | local_estimate | external_estimate | category_fallback`, with currency, unit basis (kg/l/piece), confidence, optional `observedAt` and optional *known* `packSize`. `PricedLine` separates `consumedValue` (worth of the quantity a recipe uses) from `purchaseCost` (what must actually be spent), plus `purchasedQuantity` and `leftoverQuantity`.
+- **`src/lib/cost/units.ts`** — maps units onto a price basis and converts safely, reusing `convertQuantity`/`unitFamily` from `src/lib/grocery.ts`. Refuses density-dependent conversions (cup/tbsp/tsp → kg) rather than assuming.
+- **`src/lib/cost/confidence.ts`** — per-source base confidence, personal-price confidence from observation count and age, penalties for proportional packs / unit mismatch / missing amounts, cost-weighted overall confidence, coarse labels (`unknown/rough/fair/good`).
+- **`src/lib/cost/referencePrices.ts`** — coarse category reference prices (SEK) used only as `category_fallback`.
+- **`src/lib/cost/sources.ts`** — the four sources as pure functions over caller-supplied data: personal (median of own purchases, real pack sizes), local estimate (supported slot, intentionally no MVP data), external estimate (Spoonacular-style; refuses cross-currency use without an explicit caller-supplied rate), category fallback.
+- **`src/lib/cost/resolver.ts`** — asks sources in priority order, skips ones that decline, tolerates a throwing source, returns null when nothing can price a line.
+- **`src/lib/cost/engine.ts`** — deterministic engine: scales recipe ingredients by servings, consolidates identical ingredients plan-wide (incompatible units stay in separate buckets), subtracts pantry with safe conversion, prices only missing quantities, buys whole packs when a pack size is known (leftovers tracked), otherwise a flagged proportional estimate. `evaluatePlanCost` returns lines + summary (estimated shopping cost, pantry value used, leftover value, cost per serving, pantry ingredients used, expiring rescued, unpriced count, overall confidence). `compareWithBudget` does the budget arithmetic and names the costliest lines to target for substitutions.
+- **`src/lib/cost/cost.test.ts`** — 19 tests, all passing (`bun test src/lib/cost`).
+- **`tsconfig.app.json`** — test files excluded from the app typecheck.
+
+
 ## Mobile Beta UX Audit — Round 2 (Deferred Friction)
 
 Follow-up to Round 1. Fixes the medium-friction items logged for a second pass. No new features, no redesign, no changes to database / auth / Product Intelligence / service-worker strategy / navigation structure.
