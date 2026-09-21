@@ -15,6 +15,7 @@ import type { PantryItem } from "@/repositories/pantry";
 import { simulatePlan, type SimMeal, type SimPantryItem, type SimulationResult } from "./inventory";
 import { evaluateBudget, type BudgetStatus, type PlanningBudget } from "./budget";
 import { planMetrics, type PlanMetrics } from "./objective";
+import { reconcileWithGrocery, type ReconcileDifference } from "./reconcile";
 import type { DraftMeal } from "./draft";
 
 /**
