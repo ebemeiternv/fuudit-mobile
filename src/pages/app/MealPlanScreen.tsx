@@ -390,6 +390,44 @@ const MealPlanScreen = () => {
         defaultTo={toIso}
         existingPending={groceryItems.filter((i) => !i.checked)}
       />
+
+      <GenerateMealPlanSheet
+        open={generatePlanOpen}
+        onOpenChange={setGeneratePlanOpen}
+        weekDays={weekDays.map(toLocalIsoDate)}
+        entries={entries}
+        onGenerated={(d) => setDraft(d)}
+      />
+
+      <DraftReviewSheet
+        open={draft !== null}
+        draft={draft}
+        onClose={() => setDraft(null)}
+        onDraftChange={setDraft}
+        onRegenerateSlot={regenerateSlot}
+        onAccepted={() => setGroceryPromptOpen(true)}
+      />
+
+      <AlertDialog open={groceryPromptOpen} onOpenChange={setGroceryPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Plan saved</AlertDialogTitle>
+            <AlertDialogDescription>
+              Want to create the grocery list for these meals now? It only adds what's
+              missing after checking your pantry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Later</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => setGenerateOpen(true)}
+              className="bg-[hsl(var(--app-primary))] text-white"
+            >
+              Create grocery list
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
