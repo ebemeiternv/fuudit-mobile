@@ -41,6 +41,12 @@ import {
 import { Sparkles } from "lucide-react";
 import { useSmartDefaults } from "@/hooks/queries/useProductIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
+import {
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+  preferredCurrency,
+} from "@/lib/planningDefaults";
 import type { PantryItem } from "@/repositories/pantry";
 
 const schema = z.object({
@@ -55,6 +61,12 @@ const schema = z.object({
   purchased_on: z.string().optional(),
   expires_on: z.string().optional(),
   notes: z.string().max(500).optional(),
+  // Price is always optional; when given it must be a non-negative number.
+  price_paid: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(Number(v)), "Must be a number")
+    .refine((v) => !v || Number(v) >= 0, "Can't be negative"),
 });
 
 type FormState = {
@@ -66,6 +78,9 @@ type FormState = {
   purchased_on: string;
   expires_on: string;
   notes: string;
+  /** Optional: what was paid for this pack. Feeds personal price estimates. */
+  price_paid: string;
+  price_currency: string;
   // Optional product metadata (from barcode scans). Not user-editable in the
   // form itself, but preserved so submit can persist it.
   barcode: string;
@@ -86,6 +101,8 @@ const empty: FormState = {
   purchased_on: "",
   expires_on: "",
   notes: "",
+  price_paid: "",
+  price_currency: DEFAULT_CURRENCY,
   barcode: "",
   brand: "",
   product_image_url: "",
