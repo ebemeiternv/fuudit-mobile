@@ -326,11 +326,16 @@ export const simulatePlan = (
       const notes: string[] = [];
 
       // Value of one needed unit through the estimate's basis.
+      //
+      // A line with no unit at all ("2.5 black beans") is NOT reliably
+      // countable — recipe sources often drop cups/cans/ounces. Pricing it as
+      // pieces would invent a number, so it stays explicitly unpriced.
       let unitValue: number | null = null;
       let confidence = 0;
-      if (estimate) {
-        const oneInBasis =
-          unit == null && estimate.basis === "piece" ? 1 : toBasisQuantity(1, unit, estimate.basis);
+      if (unit == null) {
+        notes.push("No unit stated — can't estimate a price");
+      } else if (estimate) {
+        const oneInBasis = toBasisQuantity(1, unit, estimate.basis);
         if (oneInBasis == null) {
           notes.push("Unit can't be compared with the price estimate");
           confidence = applyPenalty(estimate.confidence, CONFIDENCE_PENALTY.unitMismatch);
