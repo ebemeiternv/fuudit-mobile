@@ -253,6 +253,8 @@ export type Database = {
           notes: string | null
           package_quantity: number | null
           package_unit: Database["public"]["Enums"]["unit_type"] | null
+          price_currency: string | null
+          price_paid: number | null
           product_image_url: string | null
           product_source: string | null
           product_source_id: string | null
@@ -275,6 +277,8 @@ export type Database = {
           notes?: string | null
           package_quantity?: number | null
           package_unit?: Database["public"]["Enums"]["unit_type"] | null
+          price_currency?: string | null
+          price_paid?: number | null
           product_image_url?: string | null
           product_source?: string | null
           product_source_id?: string | null
@@ -297,6 +301,8 @@ export type Database = {
           notes?: string | null
           package_quantity?: number | null
           package_unit?: Database["public"]["Enums"]["unit_type"] | null
+          price_currency?: string | null
+          price_paid?: number | null
           product_image_url?: string | null
           product_source?: string | null
           product_source_id?: string | null
@@ -412,6 +418,7 @@ export type Database = {
           household_size: number | null
           id: string
           onboarding_complete: boolean
+          planning_defaults: Json
           updated_at: string
         }
         Insert: {
@@ -423,6 +430,7 @@ export type Database = {
           household_size?: number | null
           id: string
           onboarding_complete?: boolean
+          planning_defaults?: Json
           updated_at?: string
         }
         Update: {
@@ -434,6 +442,7 @@ export type Database = {
           household_size?: number | null
           id?: string
           onboarding_complete?: boolean
+          planning_defaults?: Json
           updated_at?: string
         }
         Relationships: []
