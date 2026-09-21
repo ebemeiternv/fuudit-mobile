@@ -9,16 +9,26 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Minus, Plus, ShieldCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronDown, Loader2, Minus, Plus, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/queries/useProfile";
 import { usePantryItems } from "@/hooks/queries/usePantryItems";
-import { parsePlanningDefaults } from "@/lib/planningDefaults";
+import {
+  BUDGET_PERIODS,
+  SUPPORTED_CURRENCIES,
+  parsePlanningDefaults,
+  type BudgetPeriod,
+} from "@/lib/planningDefaults";
 import { shortWeekday, todayLocalIso } from "@/lib/dates";
-import { buildSlots, type DraftPlan, type MealType, type PlanSlot } from "@/lib/mealPlan/draft";
+import { buildSlots, type DraftMeal, type DraftPlan, type MealType, type PlanSlot } from "@/lib/mealPlan/draft";
 import { fetchCandidates, generateMealPlan, GenerateError } from "@/lib/mealPlan/generate";
+import { derivePlanningBudget } from "@/lib/mealPlan/budget";
+import { simulatePlan } from "@/lib/mealPlan/inventory";
+import { createPlanResolver, draftToSimMeals, toSimPantry } from "@/lib/mealPlan/planCost";
+import { optimizePlan } from "@/lib/mealPlan/optimize";
 import type { MealPlanEntryWithRecipe } from "@/repositories/mealPlan";
 
 const MEAL_SLOTS: { value: MealType; label: string }[] = [
@@ -91,6 +101,16 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
   const [styles, setStyles] = useState<string[]>([]);
   const [occupiedMode, setOccupiedMode] = useState<"keep" | "replace">("keep");
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState<string | null>(null);
+
+  // Optional budget — off by default. These are one-session overrides and never
+  // change the saved profile defaults.
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [budgetOn, setBudgetOn] = useState(false);
+  const [budgetAmount, setBudgetAmount] = useState("");
+  const [budgetCurrency, setBudgetCurrency] = useState<string>("SEK");
+  const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>("weekly");
+  const [bufferPercent, setBufferPercent] = useState(10);
 
   useEffect(() => {
     if (!open) return;
@@ -103,6 +123,13 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
     setStyles(defaults.nutritionStyles);
     setOccupiedMode("keep");
     setBusy(false);
+    setBusyLabel(null);
+    setBudgetOn(false);
+    setBudgetOpen(false);
+    setBudgetAmount(defaults.budget.amount != null ? String(defaults.budget.amount) : "");
+    setBudgetCurrency(defaults.budget.currency);
+    setBudgetPeriod(defaults.budget.period);
+    setBufferPercent(defaults.budget.bufferPercent);
   }, [open, plannableDays, defaults, profile]);
 
   const allSlots = useMemo(
@@ -124,9 +151,25 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
   const toggleStyle = (s: string) =>
     setStyles((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
 
+  const parsedAmount = Number(budgetAmount.replace(",", "."));
+  const planningBudget = useMemo(() => {
+    if (!budgetOn || !(parsedAmount > 0) || !days.length) return null;
+    return derivePlanningBudget(
+      {
+        amount: parsedAmount,
+        currency: budgetCurrency,
+        period: budgetPeriod,
+        customDays: defaults.budget.customDays,
+        bufferPercent,
+      },
+      { days },
+    );
+  }, [budgetOn, parsedAmount, budgetCurrency, budgetPeriod, bufferPercent, days, defaults]);
+
   const generate = async () => {
     if (!openSlots.length || busy) return;
     setBusy(true);
+    setBusyLabel(null);
     try {
       const constraints = {
         servings,
@@ -151,10 +194,65 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
         });
         return;
       }
+
+      let finalMeals = result.meals;
+      let rounds = 0;
+
+      // Budget-aware optimisation. Every number below comes from the
+      // deterministic simulation — the planner is only asked for alternatives.
+      if (planningBudget) {
+        setBusyLabel("Checking the cost");
+        const currency = planningBudget.currency;
+        const simPantry = toSimPantry(pantry);
+        const resolver = createPlanResolver(pantry, currency);
+        const slotById = new Map(openSlots.map((s) => [s.slotId, s]));
+
+        const optimised = await optimizePlan<DraftMeal>(result.meals, planningBudget, {
+          simulate: (ms) =>
+            simulatePlan(draftToSimMeals(ms), simPantry, { currency, resolver }),
+          substitute: async (req) => {
+            setBusyLabel("Looking for cheaper meals");
+            const slots = req.slots
+              .map((s) => slotById.get(s.slotId))
+              .filter((s): s is PlanSlot => !!s);
+            if (!slots.length) return [];
+            const subConstraints = {
+              ...constraints,
+              excludeRecipeIds: req.excludeRecipeIds,
+            };
+            const pool = await fetchCandidates({
+              mealTypes: [...new Set(slots.map((s) => s.mealType))],
+              pantry,
+              constraints: subConstraints,
+            });
+            if (!pool.length) return [];
+            const sub = await generateMealPlan({
+              slots,
+              candidates: pool,
+              constraints: subConstraints,
+              guidance: {
+                reason: "budget",
+                estimatedSpend: req.spend,
+                budget: req.budget,
+                currency: req.currency,
+                overBy: req.overBy,
+                reusableIngredients: req.reusableIngredients,
+                costliestMeals: req.slots,
+              },
+            });
+            return sub.meals;
+          },
+        });
+        finalMeals = optimised.meals;
+        rounds = optimised.rounds;
+      }
+
       onGenerated({
-        meals: result.meals,
+        meals: finalMeals,
         unresolved: result.unresolved,
         kept: keptSlots,
+        budget: planningBudget,
+        optimiseRounds: rounds,
       });
       onOpenChange(false);
     } catch (err) {
@@ -167,6 +265,7 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
       });
     } finally {
       setBusy(false);
+      setBusyLabel(null);
     }
   };
 
@@ -265,6 +364,102 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
             </div>
           </div>
 
+          {/* Optional budget — collapsed, and off unless switched on. */}
+          <div className="rounded-2xl border border-[hsl(var(--app-border))] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setBudgetOpen((v) => !v)}
+              aria-expanded={budgetOpen}
+              className="w-full min-h-[52px] px-4 flex items-center gap-2.5 text-left no-tap-highlight"
+            >
+              <Wallet className="h-4 w-4 text-[hsl(var(--app-primary))]" aria-hidden="true" />
+              <span className="flex-1 text-sm font-semibold text-[hsl(var(--app-foreground))]">
+                Plan within my budget
+                <span className="ml-1.5 text-xs font-normal text-[hsl(var(--app-muted))]">
+                  {budgetOn && parsedAmount > 0 ? `${parsedAmount} ${budgetCurrency}` : "optional"}
+                </span>
+              </span>
+              <ChevronDown
+                className={cn("h-4 w-4 text-[hsl(var(--app-muted))] transition-transform", budgetOpen && "rotate-180")}
+                aria-hidden="true"
+              />
+            </button>
+
+            {budgetOpen && (
+              <div className="px-4 pb-4 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Chip active={budgetOn} onClick={() => setBudgetOn((v) => !v)}>
+                    {budgetOn ? "Budget on" : "Turn on"}
+                  </Chip>
+                </div>
+
+                {budgetOn && (
+                  <>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Label htmlFor="mp-budget" className="text-xs">
+                          Amount
+                        </Label>
+                        <Input
+                          id="mp-budget"
+                          inputMode="decimal"
+                          value={budgetAmount}
+                          onChange={(e) => setBudgetAmount(e.target.value)}
+                          placeholder="1200"
+                          className="h-12 rounded-xl mt-1"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <Label htmlFor="mp-currency" className="text-xs">
+                          Currency
+                        </Label>
+                        <select
+                          id="mp-currency"
+                          value={budgetCurrency}
+                          onChange={(e) => setBudgetCurrency(e.target.value)}
+                          className="mt-1 h-12 w-full rounded-xl border border-[hsl(var(--app-border))] bg-white px-2 text-sm"
+                        >
+                          {SUPPORTED_CURRENCIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {BUDGET_PERIODS.filter((p) => p.value !== "custom").map((p) => (
+                        <Chip
+                          key={p.value}
+                          active={budgetPeriod === p.value}
+                          onClick={() => setBudgetPeriod(p.value)}
+                        >
+                          {p.label}
+                        </Chip>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {[0, 5, 10, 20].map((b) => (
+                        <Chip key={b} active={bufferPercent === b} onClick={() => setBufferPercent(b)}>
+                          {b === 0 ? "No buffer" : `${b}% buffer`}
+                        </Chip>
+                      ))}
+                    </div>
+
+                    <p className="text-xs text-[hsl(var(--app-muted))] leading-relaxed">
+                      {planningBudget
+                        ? `About ${planningBudget.amount} ${planningBudget.currency} for these days — ${planningBudget.note}. All costs are estimates, not shop prices.`
+                        : "Enter an amount to plan against. All costs are estimates, not shop prices."}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+
           {occupiedCount > 0 && (
             <div>
               <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
@@ -301,8 +496,10 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
           >
             {busy ? (
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" /> Planning {openSlots.length} meal
-                {openSlots.length === 1 ? "" : "s"}…
+                <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                {busyLabel ??
+                  `Planning ${openSlots.length} meal${openSlots.length === 1 ? "" : "s"}`}
+                …
               </span>
             ) : (
               "Generate plan"

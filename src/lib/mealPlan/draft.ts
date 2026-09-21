@@ -7,6 +7,7 @@
 
 import type { Database } from "@/integrations/supabase/types";
 import type { MealPlanEntryWithRecipe } from "@/repositories/mealPlan";
+import type { PlanningBudget } from "./budget";
 
 export type MealType = Database["public"]["Enums"]["meal_type"];
 
@@ -51,6 +52,10 @@ export type DraftMeal = {
   image: string | null;
   readyMinutes: number | null;
   servings: number;
+  /** Servings the source recipe yields — needed to scale quantities. */
+  recipeServings: number | null;
+  /** Ingredient lines from the catalogue candidate (Phase 4 simulation input). */
+  ingredients: { name: string; amount: number | null; unit: string | null }[];
   /** Pantry item names this recipe uses (measurable signal). */
   pantryUsed: string[];
   /** Pantry items expiring soon that this recipe uses. */
@@ -63,6 +68,10 @@ export type DraftPlan = {
   unresolved: PlanSlot[];
   /** Occupied slots the user chose to keep (never touched). */
   kept: PlanSlot[];
+  /** Phase 4: the budget this draft was generated against, when enabled. */
+  budget?: PlanningBudget | null;
+  /** Rounds of budget-driven substitution the optimiser used. */
+  optimiseRounds?: number;
 };
 
 /** What one generation run is asked to produce. */

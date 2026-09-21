@@ -8,11 +8,13 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Clock, Loader2, RefreshCw, Trash2, Leaf, Timer, Users } from "lucide-react";
+import { Clock, Loader2, RefreshCw, Trash2, Leaf, Timer, Users, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useAddToMealPlan } from "@/hooks/queries/useMealPlan";
+import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import { shortWeekday } from "@/lib/dates";
+import { evaluateDraft, mealReasons } from "@/lib/mealPlan/planCost";
 import type { DraftMeal, DraftPlan, PlanSlot } from "@/lib/mealPlan/draft";
 
 type Props = {
@@ -67,6 +69,18 @@ const DraftReviewSheet = ({
   const rescuedCount = useMemo(
     () => new Set((draft?.meals ?? []).flatMap((m) => m.expiringUsed)).size,
     [draft],
+  );
+
+  // Whole-plan cost evaluation. Recomputed on every draft change, so removing
+  // or regenerating one meal always refreshes the entire summary.
+  const { data: pantry = [] } = usePantryItems(user?.id);
+  const budget = draft?.budget ?? null;
+  const cost = useMemo(
+    () =>
+      draft && budget
+        ? evaluateDraft(draft.meals, pantry, budget, budget.currency)
+        : null,
+    [draft, pantry, budget],
   );
 
   if (!draft) return null;
@@ -176,6 +190,71 @@ const DraftReviewSheet = ({
             </div>
           )}
 
+          {cost && budget && (
+            <div className="rounded-2xl border border-[hsl(var(--app-border))] bg-[hsl(var(--app-subtle))] p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-[hsl(var(--app-primary))]" aria-hidden="true" />
+                <p className="text-sm font-semibold text-[hsl(var(--app-foreground))]">
+                  Budget for these days
+                </p>
+              </div>
+
+              <SummaryRow label="Budget" value={`${budget.amount} ${budget.currency}`} />
+              <SummaryRow
+                label="Estimated shopping"
+                value={
+                  cost.status.kind === "incomplete"
+                    ? `~${cost.sim.summary.estimatedPurchaseSpend} ${budget.currency} + ${cost.status.unpricedCount} unpriced item${cost.status.unpricedCount === 1 ? "" : "s"}`
+                    : `~${cost.sim.summary.estimatedPurchaseSpend} ${budget.currency}`
+                }
+              />
+
+              {cost.status.kind === "complete" ? (
+                <SummaryRow
+                  label={cost.status.withinBudget ? "Budget remaining" : "Over budget"}
+                  value={`~${cost.status.withinBudget ? cost.status.remaining : cost.status.overBy} ${budget.currency}`}
+                  strong
+                />
+              ) : cost.status.kind === "incomplete" ? (
+                <>
+                  <SummaryRow label="Budget status" value="Incomplete estimate" strong />
+                  <SummaryRow
+                    label="Known-price headroom"
+                    value={`~${cost.status.knownPriceHeadroom} ${budget.currency}`}
+                  />
+                </>
+              ) : null}
+
+              <SummaryRow
+                label="Pantry ingredients used"
+                value={String(cost.sim.summary.pantryIngredientsUsed)}
+              />
+              <SummaryRow
+                label="Expiring ingredients rescued"
+                value={String(cost.sim.summary.expiringIngredientsRescued)}
+              />
+              {cost.sim.summary.purchasedRemainingCount > 0 && (
+                <SummaryRow
+                  label="Purchased ingredients remaining"
+                  value={`${cost.sim.summary.purchasedRemainingCount} · ~${cost.sim.summary.estimatedPurchasedRemainingValue} ${budget.currency}`}
+                />
+              )}
+              <SummaryRow label="Confidence" value={cost.confidenceLabel} />
+
+              <p className="text-[11px] text-[hsl(var(--app-muted))] leading-relaxed pt-1">
+                Estimates only — not shop prices. Ingredients you already have are never
+                counted as spending, and anything left over from a pack you buy is already
+                included in the shopping estimate, not an extra cost.
+                {cost.status.kind === "incomplete" &&
+                  " Some ingredients have no price we can estimate, so this can't confirm the plan fits."}
+                {draft.optimiseRounds
+                  ? ` Adjusted ${draft.optimiseRounds} time${draft.optimiseRounds === 1 ? "" : "s"} to bring the cost down.`
+                  : ""}
+              </p>
+            </div>
+          )}
+
+
           {byDay.map(([date, meals]) => (
             <section key={date} className="space-y-2">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--app-primary))] px-1">
@@ -217,6 +296,11 @@ const DraftReviewSheet = ({
                         </span>
                       )}
                     </div>
+                    {cost && budget && (
+                      <p className="mt-1 text-[11px] text-[hsl(var(--app-muted))] leading-relaxed">
+                        {mealReasons(cost.sim, meal.slotId, budget.currency).join(" · ")}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5 shrink-0">
                     <button
@@ -320,5 +404,28 @@ const DraftReviewSheet = ({
     </Sheet>
   );
 };
+
+const SummaryRow = ({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) => (
+  <div className="flex items-baseline justify-between gap-3">
+    <span className="text-xs text-[hsl(var(--app-muted))]">{label}</span>
+    <span
+      className={
+        strong
+          ? "text-sm font-bold text-[hsl(var(--app-foreground))]"
+          : "text-sm font-medium text-[hsl(var(--app-foreground))]"
+      }
+    >
+      {value}
+    </span>
+  </div>
+);
 
 export default DraftReviewSheet;

@@ -194,11 +194,26 @@ export const generateMealPlan = async (args: {
   slots: PlanSlot[];
   candidates: RankedCandidate[];
   constraints: GenerateConstraints;
+  /**
+   * Phase 4: deterministic figures from the cost simulation, handed back to the
+   * planner when asking for cheaper replacements. The planner never calculates
+   * money itself — it only reads these.
+   */
+  guidance?: {
+    reason: "budget";
+    estimatedSpend: number;
+    budget: number;
+    currency: string;
+    overBy: number | null;
+    reusableIngredients: string[];
+    costliestMeals: { slotId: string; title: string; purchaseSpend: number }[];
+  } | null;
 }): Promise<GenerateResult> => {
   const { slots, candidates, constraints } = args;
 
   const { data, error } = await supabase.functions.invoke("meal-plan-generate", {
     body: {
+      guidance: args.guidance ?? null,
       slots: slots.map((s) => ({ slotId: s.slotId, date: s.date, mealType: s.mealType })),
       candidates: candidates.map((c) => ({
         id: c.id,
@@ -266,6 +281,12 @@ export const generateMealPlan = async (args: {
       image: cand.image,
       readyMinutes: cand.readyMinutes,
       servings: constraints.servings,
+      recipeServings: cand.servings,
+      ingredients: cand.ingredients.map((i) => ({
+        name: i.name,
+        amount: i.amount,
+        unit: i.unit,
+      })),
       pantryUsed: cand.signals.pantryOverlap,
       expiringUsed: cand.signals.expiringOverlap,
     });
