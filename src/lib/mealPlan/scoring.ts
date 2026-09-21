@@ -55,6 +55,8 @@ export type RankedCandidate = {
   servings: number | null;
   diets: string[];
   ingredients: CandidateIngredientSignal[];
+  /** Missing-ingredient count when the source reported it (byIngredients). */
+  missedIngredientCount?: number | null;
   signals: CandidateSignals;
 };
 

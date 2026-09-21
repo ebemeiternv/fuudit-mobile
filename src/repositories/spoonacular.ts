@@ -64,6 +64,8 @@ export const spoonacularRepository = {
     diet?: string;
     intolerances?: string;
     cuisine?: string;
+    /** Return ingredient lists with results (needed for in-code validation). */
+    fillIngredients?: boolean;
   }) => invoke<{ results: SpoonSearchHit[] }>({ action: "search", ...args }),
 
   byIngredients: (args: { ingredients: string[]; number?: number; ranking?: 1 | 2 }) =>
