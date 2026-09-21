@@ -276,6 +276,259 @@ export const DietarySheet = ({ open, onOpenChange }: BaseProps) => {
   );
 };
 
+// ------------------- Budget & planning defaults -------------------
+
+/**
+ * Defaults for future meal-planning sessions — never permanent constraints.
+ * Household size, dietary preferences and allergies live in their own sheets
+ * and are not duplicated here.
+ */
+export const BudgetPlanningSheet = ({ open, onOpenChange }: BaseProps) => {
+  const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id);
+  const updateProfile = useUpdateProfile(user?.id);
+  const rawDefaults = (profile as { planning_defaults?: unknown } | null | undefined)
+    ?.planning_defaults;
+  const [draft, setDraft] = useState<PlanningDefaults>(EMPTY_PLANNING_DEFAULTS);
+  const [amountText, setAmountText] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const parsed = parsePlanningDefaults(rawDefaults);
+    setDraft(parsed);
+    setAmountText(parsed.budget.amount != null ? String(parsed.budget.amount) : "");
+  }, [open, rawDefaults]);
+
+  const amountInvalid = amountText !== "" && !(Number(amountText) > 0);
+
+  const setBudget = (patch: Partial<PlanningDefaults["budget"]>) =>
+    setDraft((d) => ({ ...d, budget: { ...d.budget, ...patch } }));
+
+  const toggleMeal = (meal: PlanMeal) =>
+    setDraft((d) => ({
+      ...d,
+      meals: d.meals.includes(meal)
+        ? d.meals.filter((m) => m !== meal)
+        : [...d.meals, meal],
+    }));
+
+  const toggleStyle = (style: NutritionStyle) =>
+    setDraft((d) => ({
+      ...d,
+      nutritionStyles: d.nutritionStyles.includes(style)
+        ? d.nutritionStyles.filter((s) => s !== style)
+        : [...d.nutritionStyles, style],
+    }));
+
+  const save = async () => {
+    if (amountInvalid) return;
+    const next = parsePlanningDefaults({
+      ...draft,
+      budget: {
+        ...draft.budget,
+        amount: amountText === "" ? null : Number(amountText),
+      },
+    });
+    try {
+      await updateProfile.mutateAsync({
+        // Merge so unknown / future keys are never erased by this save.
+        planning_defaults: mergePlanningDefaults(rawDefaults, next) as never,
+      });
+      toast({ title: "Saved", description: "Used as a starting point when planning." });
+      onOpenChange(false);
+    } catch (err) {
+      toast({
+        title: "Couldn't save",
+        description: err instanceof Error ? err.message : "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const busy = updateProfile.isPending;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90dvh] overflow-y-auto">
+        <SheetHeader className="text-left">
+          <SheetTitle>Budget &amp; planning</SheetTitle>
+          <SheetDescription>
+            Your usual starting point. You can change any of this when you plan.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="space-y-6 py-4">
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
+              Food budget (optional)
+            </p>
+            <div className="flex gap-2">
+              <Input
+                inputMode="decimal"
+                value={amountText}
+                onChange={(e) => setAmountText(e.target.value)}
+                placeholder="e.g. 1200"
+                aria-label="Budget amount"
+                className="h-12 rounded-xl flex-1"
+              />
+              <Select
+                value={draft.budget.currency}
+                onValueChange={(v) => setBudget({ currency: v as CurrencyCode })}
+              >
+                <SelectTrigger className="h-12 rounded-xl w-[100px]" aria-label="Currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {amountInvalid && (
+              <p className="text-xs text-[hsl(var(--app-danger))] mt-1">
+                Enter an amount above zero, or leave it empty.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {BUDGET_PERIODS.map((p) => (
+                <Chip
+                  key={p.value}
+                  active={draft.budget.period === p.value}
+                  onClick={() => setBudget({ period: p.value })}
+                >
+                  {p.label}
+                </Chip>
+              ))}
+            </div>
+            {draft.budget.period === "custom" && (
+              <div className="mt-3">
+                <Label className="text-sm">Over how many days?</Label>
+                <Input
+                  inputMode="numeric"
+                  value={draft.budget.customDays != null ? String(draft.budget.customDays) : ""}
+                  onChange={(e) =>
+                    setBudget({
+                      customDays: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
+                  placeholder="e.g. 10"
+                  className="h-12 rounded-xl mt-1"
+                />
+              </div>
+            )}
+            <p className="text-xs text-[hsl(var(--app-muted))] mt-3 leading-relaxed">
+              Leave empty to plan without a budget. All costs Fuudit shows are
+              estimates, not shop prices.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
+              Keep a small buffer
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[0, 5, 10, 15].map((b) => (
+                <Chip
+                  key={b}
+                  active={draft.budget.bufferPercent === b}
+                  onClick={() => setBudget({ bufferPercent: b })}
+                >
+                  {b}%
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
+              Meals you usually plan
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PLAN_MEALS.map((m) => (
+                <Chip
+                  key={m.value}
+                  active={draft.meals.includes(m.value)}
+                  onClick={() => toggleMeal(m.value)}
+                >
+                  {m.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
+              Usual cooking time
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[15, 30, 45, 60].map((n) => (
+                <Chip
+                  key={n}
+                  active={draft.maxCookingMinutes === n}
+                  onClick={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      maxCookingMinutes: d.maxCookingMinutes === n ? null : n,
+                    }))
+                  }
+                >
+                  Up to {n} min
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[hsl(var(--app-foreground))] mb-2">
+              Planning priorities
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Chip
+                active={draft.prioritizePantry}
+                onClick={() => setDraft((d) => ({ ...d, prioritizePantry: !d.prioritizePantry }))}
+              >
+                Use what I have
+              </Chip>
+              <Chip
+                active={draft.prioritizeExpiring}
+                onClick={() =>
+                  setDraft((d) => ({ ...d, prioritizeExpiring: !d.prioritizeExpiring }))
+                }
+              >
+                Rescue expiring food
+              </Chip>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {NUTRITION_STYLES.map((s) => (
+                <Chip
+                  key={s.value}
+                  active={draft.nutritionStyles.includes(s.value)}
+                  onClick={() => toggleStyle(s.value)}
+                >
+                  {s.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <SheetFooter className="safe-bottom">
+          <Button
+            onClick={save}
+            disabled={busy || amountInvalid}
+            className="w-full h-12 rounded-xl font-semibold bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // ------------------- Notifications (info) -------------------
 
 export const NotificationsSheet = ({ open, onOpenChange }: BaseProps) => (
