@@ -68,7 +68,12 @@ const MealPlanScreen = () => {
   });
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [generatePlanOpen, setGeneratePlanOpen] = useState(false);
+  const [draft, setDraft] = useState<DraftPlan | null>(null);
+  const [groceryPromptOpen, setGroceryPromptOpen] = useState(false);
   const { data: groceryItems = [] } = useGroceryItems(userId);
+  const { data: profile } = useProfile(userId);
+  const { data: pantry = [] } = usePantryItems(userId);
 
   const weekStart = useMemo(() => startOfWeekMonday(selected), [selected]);
   const weekDays = useMemo(
