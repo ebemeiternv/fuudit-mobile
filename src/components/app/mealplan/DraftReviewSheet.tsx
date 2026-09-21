@@ -83,12 +83,6 @@ const DraftReviewSheet = ({
     [draft, pantry, budget],
   );
 
-  if (cost) {
-    // TEMP-DIAG
-    const top = [...cost.sim.purchases].sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0)).slice(0, 12);
-    console.log("DIAG", JSON.stringify(top));
-  }
-
   if (!draft) return null;
 
   const removeMeal = (slotId: string) => {
@@ -175,7 +169,7 @@ const DraftReviewSheet = ({
         </SheetHeader>
 
         <div className="py-4 space-y-5">
-          {(pantryCount > 0 || rescuedCount > 0) && (
+          {!cost && (pantryCount > 0 || rescuedCount > 0) && (
             <div className="flex gap-2">
               {pantryCount > 0 && (
                 <div className="flex-1 app-card-flat p-3 text-center">
@@ -205,29 +199,36 @@ const DraftReviewSheet = ({
                 </p>
               </div>
 
-              <SummaryRow label="Budget" value={`${budget.amount} ${budget.currency}`} />
+              <SummaryRow label="Budget" value={`${money(budget.amount)} ${budget.currency}`} />
               <SummaryRow
                 label="Estimated shopping"
                 value={
                   cost.status.kind === "incomplete"
-                    ? `~${cost.sim.summary.estimatedPurchaseSpend} ${budget.currency} + ${cost.status.unpricedCount} unpriced item${cost.status.unpricedCount === 1 ? "" : "s"}`
-                    : `~${cost.sim.summary.estimatedPurchaseSpend} ${budget.currency}`
+                    ? `~${money(cost.sim.summary.estimatedPurchaseSpend)} ${budget.currency} + ${cost.status.unpricedCount} unpriced item${cost.status.unpricedCount === 1 ? "" : "s"}`
+                    : `~${money(cost.sim.summary.estimatedPurchaseSpend)} ${budget.currency}`
                 }
               />
 
               {cost.status.kind === "complete" ? (
                 <SummaryRow
                   label={cost.status.withinBudget ? "Budget remaining" : "Over budget"}
-                  value={`~${cost.status.withinBudget ? cost.status.remaining : cost.status.overBy} ${budget.currency}`}
+                  value={`~${money(cost.status.withinBudget ? cost.status.remaining : cost.status.overBy)} ${budget.currency}`}
                   strong
                 />
               ) : cost.status.kind === "incomplete" ? (
                 <>
                   <SummaryRow label="Budget status" value="Incomplete estimate" strong />
-                  <SummaryRow
-                    label="Known-price headroom"
-                    value={`~${cost.status.knownPriceHeadroom} ${budget.currency}`}
-                  />
+                  {cost.status.exceedsOnKnownPrices ? (
+                    <SummaryRow
+                      label="Priced items alone"
+                      value={`~${money(-cost.status.knownPriceHeadroom)} ${budget.currency} over`}
+                    />
+                  ) : (
+                    <SummaryRow
+                      label="Known-price headroom"
+                      value={`~${money(cost.status.knownPriceHeadroom)} ${budget.currency}`}
+                    />
+                  )}
                 </>
               ) : null}
 
@@ -242,7 +243,7 @@ const DraftReviewSheet = ({
               {cost.sim.summary.purchasedRemainingCount > 0 && (
                 <SummaryRow
                   label="Purchased ingredients remaining"
-                  value={`${cost.sim.summary.purchasedRemainingCount} · ~${cost.sim.summary.estimatedPurchasedRemainingValue} ${budget.currency}`}
+                  value={`${cost.sim.summary.purchasedRemainingCount} · ~${money(cost.sim.summary.estimatedPurchasedRemainingValue)} ${budget.currency}`}
                 />
               )}
               <SummaryRow label="Confidence" value={cost.confidenceLabel} />
@@ -410,6 +411,8 @@ const DraftReviewSheet = ({
     </Sheet>
   );
 };
+
+const money = (n: number) => Math.round(n).toLocaleString();
 
 const SummaryRow = ({
   label,
