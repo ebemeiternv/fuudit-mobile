@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
       const diet = safeStr(body.diet);
       const intolerances = safeStr(body.intolerances);
       const cuisine = safeStr(body.cuisine);
+      // fillIngredients lets callers (e.g. meal-plan generation) validate
+      // allergies and compute pantry signals in code, not just by name.
+      const fillIngredients = body.fillIngredients === true ? "true" : undefined;
       const r = await spoonGet("/recipes/complexSearch", {
         query: query || undefined,
         number,
@@ -73,6 +76,7 @@ Deno.serve(async (req) => {
         addRecipeInformation: "true",
         addRecipeNutrition: "false",
         instructionsRequired: "true",
+        fillIngredients,
       });
       if (!r.ok) return json({ error: "upstream", code: r.code }, r.status === 402 || r.status === 429 ? 429 : 502);
       return json({ results: r.data.results ?? [] });
