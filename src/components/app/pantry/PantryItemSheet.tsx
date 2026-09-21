@@ -569,6 +569,49 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
               </div>
             </div>
 
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="price_paid">Paid (optional)</Label>
+                <Input
+                  id="price_paid"
+                  inputMode="decimal"
+                  value={form.price_paid}
+                  onChange={(e) => set("price_paid", e.target.value)}
+                  placeholder="e.g. 24"
+                  className="h-12 rounded-xl"
+                />
+                {errors.price_paid && (
+                  <p className="text-xs text-[hsl(var(--app-danger))]">
+                    {errors.price_paid}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Currency</Label>
+                <Select
+                  value={form.price_currency}
+                  onValueChange={(v) => set("price_currency", v)}
+                >
+                  <SelectTrigger className="h-12 rounded-xl w-[104px]" aria-label="Currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="-mt-2 text-xs text-[hsl(var(--app-muted))]">
+              Adding what you paid helps Fuudit estimate grocery costs from your
+              own prices instead of rough averages.
+            </p>
+
+
+
             <div className="space-y-1.5">
               <Label htmlFor="notes">Notes (optional)</Label>
               <Textarea
