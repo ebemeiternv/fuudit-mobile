@@ -248,6 +248,14 @@ const DraftReviewSheet = ({
               )}
               <SummaryRow label="Confidence" value={cost.confidenceLabel} />
 
+              {cost.groceryDifferences.length > 0 && (
+                <p className="text-[11px] text-[hsl(var(--app-muted))] leading-relaxed pt-1">
+                  {cost.groceryDifferences.length} ingredient
+                  {cost.groceryDifferences.length === 1 ? "" : "s"} may end up with a slightly
+                  different amount on your shopping list.
+                </p>
+              )}
+
               <p className="text-[11px] text-[hsl(var(--app-muted))] leading-relaxed pt-1">
                 Estimates only — not shop prices. Ingredients you already have are never
                 counted as spending, and anything left over from a pack you buy is already
