@@ -292,12 +292,12 @@ const DraftReviewSheet = ({
                           <Clock className="h-3 w-3" /> {meal.readyMinutes} min
                         </span>
                       )}
-                      {meal.pantryUsed.length > 0 && (
+                      {!cost && meal.pantryUsed.length > 0 && (
                         <span className="inline-flex items-center gap-1 text-[hsl(var(--app-primary))]">
                           <Leaf className="h-3 w-3" /> uses {meal.pantryUsed.length} you have
                         </span>
                       )}
-                      {meal.expiringUsed.length > 0 && (
+                      {!cost && meal.expiringUsed.length > 0 && (
                         <span className="inline-flex items-center gap-1 text-[hsl(var(--app-primary))]">
                           <Timer className="h-3 w-3" /> rescues {meal.expiringUsed.length}
                         </span>
