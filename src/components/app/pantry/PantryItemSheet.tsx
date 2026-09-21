@@ -134,12 +134,18 @@ type Props = {
     product_source_id?: string | null;
     package_quantity?: number | null;
     package_unit?: UnitType | null;
+    price_paid?: number | null;
+    price_currency?: string | null;
   }) => Promise<void>;
   saving?: boolean;
 };
 
 const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, saving }: Props) => {
   const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id);
+  const profileCurrency = preferredCurrency(
+    (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+  );
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Track which fields the user has touched so learned defaults never
