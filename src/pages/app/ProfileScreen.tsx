@@ -8,16 +8,25 @@ import ScreenHeader from "@/components/app/ScreenHeader";
 import { useToast } from "@/hooks/use-toast";
 import InstallRow from "@/pwa/InstallRow";
 import { BUILD_ID } from "@/pwa/buildId";
-import { Bell, Bookmark, Leaf, HelpCircle, Shield, LogOut, ChevronRight, Users } from "lucide-react";
+import { Bell, Bookmark, Leaf, HelpCircle, Shield, LogOut, ChevronRight, Users, Wallet } from "lucide-react";
 import {
   HouseholdSheet,
   DietarySheet,
+  BudgetPlanningSheet,
   NotificationsSheet,
   PrivacySheet,
   HelpSheet,
 } from "@/components/app/profile/ProfileSheets";
+import { parsePlanningDefaults } from "@/lib/planningDefaults";
 
-type SheetKey = "household" | "dietary" | "notifications" | "privacy" | "help" | null;
+type SheetKey =
+  | "household"
+  | "dietary"
+  | "budget"
+  | "notifications"
+  | "privacy"
+  | "help"
+  | null;
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();

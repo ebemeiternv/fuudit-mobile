@@ -10,12 +10,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Minus, Plus, Loader2, ExternalLink, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/queries/useProfile";
 import { BUILD_ID } from "@/pwa/buildId";
 import { cn } from "@/lib/utils";
+import {
+  BUDGET_PERIODS,
+  EMPTY_PLANNING_DEFAULTS,
+  NUTRITION_STYLES,
+  PLAN_MEALS,
+  SUPPORTED_CURRENCIES,
+  mergePlanningDefaults,
+  parsePlanningDefaults,
+  type CurrencyCode,
+  type NutritionStyle,
+  type PlanMeal,
+  type PlanningDefaults,
+} from "@/lib/planningDefaults";
 
 /** Options aligned with Spoonacular's `diet` and `intolerances` params. */
 export const DIET_OPTIONS: { value: string; label: string }[] = [
