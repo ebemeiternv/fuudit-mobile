@@ -1,123 +1,79 @@
-# Budget-aware meal planning — revised architecture proposal
+# Phase 3 — AI-assisted generation inside the existing Meal Plan
 
-Nothing implemented. Revised per your six points.
+No new Meal Plan feature, no parallel screen, no second data model. Generation is one more way to fill the meal plan you already have. Manual planning stays exactly as it is today.
 
-## Inspection result (unchanged)
+## What already exists (and gets reused untouched)
 
-- **Meal plan** is manual today: recipe → day + meal slot, with servings. There is **no AI meal-plan generator yet**; the AI is the Chef chat (reads pantry, searches recipes, suggests).
-- **Pantry**: name, quantity + unit, category, location, expiry, purchase date, status (active/consumed/discarded), barcode data.
-- **Recipes**: Spoonacular cache with ingredients, servings, cooking time.
-- **Grocery list** already solves the hard part: gathers ingredients from chosen meal-plan days, scales by servings, matches active pantry items, converts units safely, subtracts what you have, consolidates duplicates, then shows a review step.
-- **Profile**: household size, dietary preferences, allergies.
-- **Pricing: none exists anywhere** in code or database.
+- **Meal Plan screen** — week navigation, day strip with per-day meal counts, the four slot sections (Breakfast / Lunch / Dinner / Snack), each with its own "Add" action and dashed empty state, a "List" button that opens grocery generation, and a "+" button in the header.
+- **Meal cards** — image, title, servings, cooking time, notes, and the Edit / Move / Remove menu.
+- **Add-to-plan sheet** — recipe search, custom meals, servings, notes.
+- **One save path** — the existing add-to-plan logic already caches a recipe locally before creating the entry, so generated recipes need no new persistence code.
+- **Grocery generation** — day selection, servings scaling, pantry matching and subtraction, duplicate consolidation, review step.
+- **Phase 1 cost engine and Phase 2 defaults** — plan-wide consolidation, pantry subtraction, personal prices, budget defaults.
 
-Reused as-is: the ingredient engine (normalisation, unit conversion, pantry matching, consolidation, category inference), the grocery generation flow, profile diet/allergy/household data, pantry expiry dates, and the Chef's recipe search.
+## What Phase 3 adds
 
-## 1. Cost layer — multi-source, confidence-aware
+### 1. One new entry point on the existing screen
 
-A single internal price-estimate shape, so every consumer of a price handles all sources identically:
+Next to the existing "List" button in the Meal Plan header: **Generate**. Nothing else on the screen changes. Manual "+", per-slot "Add", editing, moving and removing keep working identically.
 
-```text
-ingredient identity, estimated price, currency,
-unit basis (per kg / per l / per piece, when resolvable),
-source: personal | external_estimate | local_estimate | category_fallback,
-confidence: 0–1,
-observed_at (optional)
-```
+### 2. Generate sheet (setup)
 
-Resolution order, highest priority first:
+A bottom sheet in the same style as the existing sheets, pre-filled from the Phase 2 profile defaults and overridable for this one session only (never written back unless the user asks):
 
-1. **personal** — your own recorded purchase prices, normalised to a unit basis. Highest trust.
-2. **local_estimate** — regional reference prices (placeholder for the MVP; the slot exists so local data, supermarket feeds or receipt scanning can be added later without touching callers).
-3. **external_estimate** — Spoonacular. Explicitly **not** treated as accurate local grocery pricing: used as a relative/ranking signal and a last-resort magnitude, flagged as external, low confidence, never presented as a shop price.
-4. **category_fallback** — built-in typical price per kg / l / piece by category, tunable in code.
+- Which days (defaults to the days of the week currently in view, past days excluded)
+- Which meals (from usual meals planned)
+- Servings (from household size)
+- Cooking time limit
+- "Plan within my budget" — collapsed and optional, pre-filled with the default budget, currency and period
+- Priorities: use what I have, rescue expiring food, nutrition style
 
-Every figure the user sees is labelled *estimated* and carries a confidence signal. No supermarket integrations, receipt scanning or live prices in this scope — only the source slots for them.
+Allergies and dietary preferences come from the profile and are shown as fixed, non-negotiable facts — not editable here and never relaxed.
 
-## 2. Deterministic cost engine — the AI does no arithmetic
+### 3. Draft review state (temporary, not persisted)
 
-A pure, testable module in the app/backend owns all numbers:
+The generated plan appears as a draft in a review sheet, held in memory only:
 
-1. expand recipe ingredients and scale to required servings
-2. consolidate identical ingredients across the **whole plan** (not per meal)
-3. subtract active pantry quantities with safe unit conversion
-4. price only the missing quantities via the resolver above
-5. total estimated shopping cost, cost per serving, pantry ingredients used, expiring items rescued
-6. compare against the budget envelope
+- Grouped by day and slot, matching the existing slot order and labels
+- Each proposed meal shows title, cooking time, servings, and — when a budget was set — its estimated added cost with "You already have" / "Still needed"
+- A calm summary at the top: estimated grocery cost, budget remaining, pantry ingredients used, expiring items rescued, cost per serving
+- Per-meal actions: remove, or regenerate just that slot
+- Slots that already contain a meal are skipped by default, with a clear "keep what's there" vs "replace" choice
+- "Accept plan" writes the entries; "Discard" leaves the plan untouched
 
-The AI's only jobs: choose recipes and propose substitutions. The loop is: AI proposes a plan → engine evaluates it → if over budget, the engine's own numbers (which lines cost the most, what is already available) are fed back with a request for cheaper substitutions → recalculate. Bounded iterations; if it still cannot fit, the user is told honestly how far over it lands, never given a silently massaged number.
+Nothing is written to the database until Accept.
 
-**Allergies are enforced in code**, after the AI answers, on top of the prompt instruction — any plan containing an allergen is rejected and regenerated. Budget never relaxes an allergy or a dietary constraint.
+### 4. Acceptance
 
-## 3. No cost fields on meal_plan_entries
+Accept loops the draft through the **existing** add-to-plan path — the same one the manual sheet uses — so every accepted meal becomes an ordinary `meal_plan_entries` row with recipe, date, slot and servings. Afterwards the plan is just the normal Meal Plan: editable, movable, removable, indistinguishable from manually added meals. Optionally, a follow-up prompt opens the existing grocery generation for those days, so the list is produced by the code that already produces it.
 
-Dropped from the earlier proposal — you are right that a per-entry cost is misleading when ingredients are shared and pantry-dependent. For the MVP, **all costs are derived** at generation and display time from the plan + pantry + price resolver.
+### 5. Generation logic (server side)
 
-If historical budget tracking is wanted later, it should be a **separate plan/budget snapshot model** — one row per generated plan capturing the budget, the totals, and the priced line items as they stood at that moment — proposed on its own, not bolted onto individual meal entries.
+A new edge function does the planning; the client only sends preferences and renders the result.
 
-## 4. Whole-plan ingredient reuse as a core objective
+- Candidate recipes come from the existing recipe search, filtered by diet, allergies and cooking time
+- The model's job is selection and substitution only — it never does arithmetic and never decides whether the plan fits the budget
+- The Phase 1 cost engine evaluates the proposed plan deterministically: consolidate across the whole plan, subtract pantry, price only missing quantities, compare with the budget envelope
+- If it is over budget, the engine's own numbers are fed back with a request for cheaper substitutions, then recalculated — a small bounded number of rounds
+- Allergens are checked in code after the model answers; any plan containing one is rejected and regenerated
+- If it still cannot fit, the user is told honestly how far over it lands — never a massaged number
 
-The planner simulates a running inventory across the period, in date order:
+### 6. Deliberately out of scope for Phase 3
 
-- start from current pantry quantities (with expiry dates)
-- each meal draws from that running inventory first
-- anything bought is bought in realistic purchase quantities, and the **remainder stays in the simulated inventory** for later meals
-- later meals prefer recipes that consume those remainders and the soonest-expiring items
+Monthly envelope tracking, historical budget snapshots, supermarket integrations, receipt scanning, any redesign of the Meal Plan screen, and any change to how manual planning works.
 
-The objective is not "pick cheap recipes". It minimises:
+## Technical notes
 
-```text
-new grocery spend + likely food waste + unused purchased ingredients
-```
-
-subject to: allergies (absolute), dietary constraints, servings/household size, budget, cooking-time limit, and preferences (healthy / high-protein / family-friendly). So if spinach is bought for Monday, the rest of the bunch is planned into a later meal before unrelated ingredients are added.
-
-Priority sequence when trade-offs are needed: allergy safety → dietary constraints → expiring ingredients → pantry availability → budget → cross-meal reuse → nutrition and cooking time.
-
-## 5. Monthly budget as a real envelope
-
-Not a flat divide-by-four. The envelope tracks the actual budget period: days remaining, spend already allocated to plans inside the period, and a small configurable buffer. The planning budget for the next week is derived from what genuinely remains over the days that remain. Only one week of detail is ever generated at a time.
-
-## 6. Proposed MVP data model
-
-Additive and minimal.
-
-**Needed now**
-
-- `profiles` — budget amount, currency, period (daily/weekly/monthly/custom), buffer %, meals to include, and planning preferences (prioritise pantry, prioritise expiring, cooking-time limit, nutrition style). Small and stable enough to be columns, or one preferences JSON field if you prefer flexibility.
-- `pantry_items` — optional purchase price + currency, feeding the personal price layer (also improves the existing product learning).
-
-**Deliberately not added now**
-
-- No cost columns on `meal_plan_entries` (point 3).
-- No ingredient-price table yet: the MVP resolver works from personal pantry prices, in-code category reference data, and Spoonacular as a flagged external signal. A shared `ingredient_prices` table becomes worthwhile only when local or crowd data arrives — the resolver interface is designed so adding it changes nothing above it.
-- No plan/budget snapshot table until you want history (separate proposal).
-
-No tables removed or renamed; every new field optional, so existing meal plans and grocery generation keep working exactly as now.
-
-## Results the user sees
-
-```text
-Weekly budget      1,200 SEK
-Estimated shopping   940 SEK
-Budget remaining     260 SEK
-
-8 pantry ingredients used · 3 expiring rescued · ~47 SEK per serving
-```
-
-Each meal shows its estimated added cost, with ingredients split into **You already have** and **Still needed**. Pantry ingredients never count as new spending — shown separately as value used. Budget is a collapsed optional section ("Plan within my budget"); untouched, generation behaves as an unbudgeted planner.
-
-## Grocery integration
-
-Accepting a plan writes the meal-plan entries, then runs the **existing** grocery generation: only missing quantities after pantry subtraction, shared ingredients counted once, duplicates consolidated, same review step. Because both use the one cost/consolidation engine, the plan's estimated shopping total and the grocery list always agree.
+- **No schema changes.** The draft lives in React state; accepted meals use `meal_plan_entries` as-is. If persisted drafts are ever wanted, that is a separate proposal.
+- **New files:** a generate sheet, a draft review sheet, a small draft type + accept helper, and one edge function (`meal-plan-generate`) using the standard Lovable AI model with a strict output schema.
+- **Changed files:** the Meal Plan screen (one button plus two sheet mounts) and the meal-plan query hooks (a batch accept built on the existing add-to-plan mutation).
+- **Reused as-is:** cost engine, price resolver, planning defaults parser, recipe caching, grocery generation, all existing meal-plan components.
+- Generation and acceptance both invalidate the existing meal-plan queries, so the week view updates the way it already does.
 
 ## Suggested build order
 
-1. Cost engine + price resolver with all four sources and confidence (pure logic, unit-tested, no UI).
-2. Budget and planning preferences on the profile; optional purchase price on pantry items.
-3. AI plan generator without budget: fill a date range from pantry, diet, allergies, time.
-4. Running-inventory simulation, whole-plan consolidation and the budget feedback loop.
-5. Budget summary + per-meal have/need breakdown.
-6. Accept → grocery list via the existing flow; monthly envelope tracking.
-
-Nothing is implemented until you approve.
+1. Draft types + accept helper on top of the existing add-to-plan path
+2. Edge function: unbudgeted generation (days, slots, diet, allergies, time, pantry-first)
+3. Draft review sheet with per-meal keep/remove/regenerate
+4. Budget evaluation loop and the summary card
+5. Optional hand-off to the existing grocery generation after acceptance
