@@ -1,79 +1,97 @@
-# Phase 3 — AI-assisted generation inside the existing Meal Plan
+# Phase 4 — Running inventory + budget-aware planning
 
-No new Meal Plan feature, no parallel screen, no second data model. Generation is one more way to fill the meal plan you already have. Manual planning stays exactly as it is today.
+Extends the existing Generate Meal Plan flow. No parallel planner, no parallel pricing, no schema changes.
 
-## What already exists (and gets reused untouched)
+## 1. Budget back in the Generate sheet
 
-- **Meal Plan screen** — week navigation, day strip with per-day meal counts, the four slot sections (Breakfast / Lunch / Dinner / Snack), each with its own "Add" action and dashed empty state, a "List" button that opens grocery generation, and a "+" button in the header.
-- **Meal cards** — image, title, servings, cooking time, notes, and the Edit / Move / Remove menu.
-- **Add-to-plan sheet** — recipe search, custom meals, servings, notes.
-- **One save path** — the existing add-to-plan logic already caches a recipe locally before creating the entry, so generated recipes need no new persistence code.
-- **Grocery generation** — day selection, servings scaling, pantry matching and subtraction, duplicate consolidation, review step.
-- **Phase 1 cost engine and Phase 2 defaults** — plan-wide consolidation, pantry subtraction, personal prices, budget defaults.
+A collapsed "Plan within my budget" section in the existing sheet:
+- amount, currency, period (matched to the generated date range), buffer %
+- pre-filled from the Profile planning defaults, editable for this session only (nothing written back to Profile)
+- off by default → Phase 3 behaviour unchanged, no cost work runs at all
 
-## What Phase 3 adds
+Monthly period is treated as an envelope: the planning budget for the generated range is derived from the amount remaining over the days remaining in the period, minus the buffer. No flat divide-by-four.
 
-### 1. One new entry point on the existing screen
+## 2. Running-inventory representation
 
-Next to the existing "List" button in the Meal Plan header: **Generate**. Nothing else on the screen changes. Manual "+", per-slot "Add", editing, moving and removing keep working identically.
+A new pure module `src/lib/mealPlan/inventory.ts`, built on the Phase 1 engine's existing consolidation, unit conversion and pantry matching (nothing duplicated).
 
-### 2. Generate sheet (setup)
+Representation: per ingredient identity key, a list of lots.
 
-A bottom sheet in the same style as the existing sheets, pre-filled from the Phase 2 profile defaults and overridable for this one session only (never written back unless the user asks):
+```text
+Lot { identityKey, quantity, unit, origin: "pantry" | "purchased",
+      expiresOn: string | null, purchaseCost: number | null }
+```
 
-- Which days (defaults to the days of the week currently in view, past days excluded)
-- Which meals (from usual meals planned)
-- Servings (from household size)
-- Cooking time limit
-- "Plan within my budget" — collapsed and optional, pre-filled with the default budget, currency and period
-- Priorities: use what I have, rescue expiring food, nutrition style
+Simulation walks meals in date order:
+1. scale the recipe's ingredients to the required servings (existing engine logic)
+2. draw from existing lots first — compatible units only (`convertQuantity`; refused conversions keep lots separate)
+3. among compatible lots, consume soonest-expiring first, pantry before purchased
+4. whatever remains is the missing quantity for that meal
+5. price the missing quantity through the Phase 1 resolver and buy in whole packs where a pack size is genuinely known
+6. the purchased lot enters the inventory; the unconsumed remainder stays there for later meals
 
-Allergies and dietary preferences come from the profile and are shown as fixed, non-negotiable facts — not editable here and never relaxed.
+The real pantry is never touched — this is an in-memory model that lives only for the duration of a draft.
 
-### 3. Draft review state (temporary, not persisted)
+## 3. Expiry handling
 
-The generated plan appears as a draft in a review sheet, held in memory only:
+- Real pantry lots carry their known expiry date; consumption prefers the soonest.
+- Purchased lots have no expiry unless one is genuinely known — they stay expiry-unknown, never invented.
+- "Rescued" is only reported when a compatible quantity whose expiry falls inside or just after the planning window is actually allocated to a meal. A name match alone never counts.
 
-- Grouped by day and slot, matching the existing slot order and labels
-- Each proposed meal shows title, cooking time, servings, and — when a budget was set — its estimated added cost with "You already have" / "Still needed"
-- A calm summary at the top: estimated grocery cost, budget remaining, pantry ingredients used, expiring items rescued, cost per serving
-- Per-meal actions: remove, or regenerate just that slot
-- Slots that already contain a meal are skipped by default, with a clear "keep what's there" vs "replace" choice
-- "Accept plan" writes the entries; "Discard" leaves the plan untouched
+## 4. Budget calculation and unpriced items
 
-Nothing is written to the database until Accept.
+All arithmetic is the deterministic engine's; the AI never decides whether a plan fits. Reported separately, as Phase 1 already models them:
+estimated purchase spend (the figure compared to the budget), consumed ingredient value, pantry value used, estimated leftovers from purchased packs, unpriced item count, confidence.
 
-### 4. Acceptance
+An unpriced ingredient is never zero. With any unpriced lines the status is stated as incomplete, e.g. `Estimated 910 SEK + 2 unpriced items`, and never as a confident "under budget".
 
-Accept loops the draft through the **existing** add-to-plan path — the same one the manual sheet uses — so every accepted meal becomes an ordinary `meal_plan_entries` row with recipe, date, slot and servings. Afterwards the plan is just the normal Meal Plan: editable, movable, removable, indistinguishable from manually added meals. Optionally, a follow-up prompt opens the existing grocery generation for those days, so the list is produced by the code that already produces it.
+## 5. Optimisation loop
 
-### 5. Generation logic (server side)
+1. Generate the initial valid Phase 3 plan (allergy/diet/time validated).
+2. Evaluate deterministically through the inventory simulation.
+3. If over budget: pick the slots whose meals contribute most new purchase spend, and identify pantry quantities and purchased leftovers that are going unused.
+4. Ask the planner for replacement candidates for those specific slots only, passing the engine's own numbers and the unused-inventory hints. Candidates go through the same Phase 3 eligibility check in code.
+5. Recalculate the whole plan, not the changed meal.
 
-A new edge function does the planning; the client only sends preferences and renders the result.
+Bounded rounds (3). Stops early when within budget or when a round yields no improvement. Allergies and dietary constraints are never relaxed; servings are never silently reduced. If the target is unreachable, the best valid plan found is returned with the estimated difference stated plainly.
 
-- Candidate recipes come from the existing recipe search, filtered by diet, allergies and cooking time
-- The model's job is selection and substitution only — it never does arithmetic and never decides whether the plan fits the budget
-- The Phase 1 cost engine evaluates the proposed plan deterministically: consolidate across the whole plan, subtract pantry, price only missing quantities, compare with the budget envelope
-- If it is over budget, the engine's own numbers are fed back with a request for cheaper substitutions, then recalculated — a small bounded number of rounds
-- Allergens are checked in code after the model answers; any plan containing one is rejected and regenerated
-- If it still cannot fit, the user is told honestly how far over it lands — never a massaged number
+## 6. Whole-plan objective
 
-### 6. Deliberately out of scope for Phase 3
+Minimised jointly across the period: new purchase spend + unused purchased quantity + food likely to expire unused. Pantry use and expiring-item rescue improve the score; a substitution is only accepted when the whole-plan score improves. A repetition penalty keeps the optimiser from collapsing the week onto one cheap recipe.
 
-Monthly envelope tracking, historical budget snapshots, supermarket integrations, receipt scanning, any redesign of the Meal Plan screen, and any change to how manual planning works.
+## 7. Draft review summary (budget on)
+
+Added beneath the existing Phase 3 summary:
+
+```text
+Weekly budget      1,200 SEK
+Estimated shopping ~940 SEK  (+2 unpriced items)
+Budget remaining   ~260 SEK
+Pantry used 8 · Expiring rescued 3 · Leftovers ~120 SEK
+Confidence Fair
+```
+
+Everything is labelled as an estimate. No supermarket-price precision is implied.
+
+## 8. Per-meal information
+
+One or two short plain lines per meal, from the simulation's own allocations:
+"Uses spinach you have", "Uses leftover feta from Monday", "Rescues mushrooms expiring tomorrow", "~85 SEK additional shopping". No tables, no ledgers.
+
+## 9. Single-slot regeneration
+
+Regenerating one slot replaces that meal, then re-runs the whole simulation from the start of the period, because shared ingredients, leftovers and total spend all shift. The summary and every per-meal line are refreshed together.
+
+## 10. Acceptance and grocery list
+
+Acceptance is unchanged: accepted meals become ordinary meal-plan entries and grocery generation stays the existing flow. Before acceptance, a reconciliation check compares the simulation's missing quantities with what the existing grocery engine would produce for the same meals and pantry; comparable lines that disagree are surfaced as a caveat rather than resolved by a second calculation.
+
+## Keeping the two engines from diverging
+
+Both read from the same primitives — `convertQuantity`, `normalizeIngredientName`, `ingredientsMatch`, `inferCategory`, `normalizeUnit` in `src/lib/grocery.ts` — and the simulation consolidates through the Phase 1 engine's existing code path. Pack purchasing and leftovers are the only thing the simulation adds on top; consumption requirements come from shared logic. A test asserts agreement between the two for a plan with no pack rounding.
 
 ## Technical notes
 
-- **No schema changes.** The draft lives in React state; accepted meals use `meal_plan_entries` as-is. If persisted drafts are ever wanted, that is a separate proposal.
-- **New files:** a generate sheet, a draft review sheet, a small draft type + accept helper, and one edge function (`meal-plan-generate`) using the standard Lovable AI model with a strict output schema.
-- **Changed files:** the Meal Plan screen (one button plus two sheet mounts) and the meal-plan query hooks (a batch accept built on the existing add-to-plan mutation).
-- **Reused as-is:** cost engine, price resolver, planning defaults parser, recipe caching, grocery generation, all existing meal-plan components.
-- Generation and acceptance both invalidate the existing meal-plan queries, so the week view updates the way it already does.
-
-## Suggested build order
-
-1. Draft types + accept helper on top of the existing add-to-plan path
-2. Edge function: unbudgeted generation (days, slots, diet, allergies, time, pantry-first)
-3. Draft review sheet with per-meal keep/remove/regenerate
-4. Budget evaluation loop and the summary card
-5. Optional hand-off to the existing grocery generation after acceptance
+- New: `src/lib/mealPlan/inventory.ts` (simulation + whole-plan scoring), `src/lib/mealPlan/optimize.ts` (bounded substitution loop), `inventory.test.ts`.
+- Changed: `GenerateMealPlanSheet.tsx` (collapsed budget section), `DraftReviewSheet.tsx` (budget summary + per-meal reasons), `src/lib/mealPlan/generate.ts` (return the cost result alongside the draft), `supabase/functions/meal-plan-generate/index.ts` (an additional targeted-substitution request shape).
+- No schema changes. No supermarket integrations, receipt scanning, historical budget snapshots, pantry mutation or live retailer prices.
