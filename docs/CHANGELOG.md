@@ -1,5 +1,25 @@
 # Fuudit Changelog
 
+## Budget-aware meal planning — Phase 4: running inventory + budget-aware optimisation
+
+Scope: budget section inside the existing Generate Meal Plan flow, chronological running-inventory simulation, deterministic budget evaluation, bounded optimisation loop, budget-aware draft review. No supermarket integrations, no receipt scanning, no budget snapshots, no pantry mutation, no schema changes.
+
+**Files**
+- `src/lib/mealPlan/inventory.ts` (new) — in-memory lot inventory across the plan. Chronological walk; scales recipe quantities to planned servings; consumes compatible existing quantities soonest-expiry-first (real pantry before packs bought inside the plan); packs are only rounded when a real pack size is known; unused purchased quantities stay available for later meals with unknown expiry. Rescue is only reported when an at-risk pantry quantity is actually allocated. A line with no unit at all is never priced as "pieces" — it is reported unpriced.
+- `src/lib/mealPlan/budget.ts` (new) — envelope derivation (monthly = days actually left in the month, not a flat quarter of the month) and honest status: `complete` only when every required purchase is priced; otherwise `incomplete` with known-price headroom and an unpriced count.
+- `src/lib/mealPlan/objective.ts` (new) — ordered, explainable comparison (budget fit, genuine rescues, new spend, purchased reuse, unused purchased value, pantry use, variety). No mixed-unit magic score. Allergies, diet and servings are hard constraints checked before comparison.
+- `src/lib/mealPlan/optimize.ts` (new) — max 3 rounds; targets the meals contributing most new spend, asks the existing generator for validated replacement candidates, recalculates the whole plan after each round, returns the best valid plan and states the remaining gap.
+- `src/lib/mealPlan/planCost.ts` (new) — one resolver (personal → empty local → coarse category fallback), draft → simulation glue, per-meal reasons, and reconciliation against the shared grocery/cost reference.
+- `src/lib/mealPlan/reconcile.ts` (new) — compares the simulation's pre-pack missing quantities with the existing cost/grocery reference where units are comparable (2% tolerance). Comparison only — no second shopping calculation.
+- `src/lib/mealPlan/draft.ts`, `generate.ts`, `supabase/functions/meal-plan-generate/index.ts` — drafts now carry recipe servings, structured ingredient lines, the budget used and the optimisation round count. The model receives deterministic guidance (spend, budget, costly slots, reusable ingredients) and is explicitly told it must not calculate costs or judge budget fit.
+- `src/components/app/mealplan/GenerateMealPlanSheet.tsx` — collapsed optional "Plan within my budget" (amount, currency, period, buffer), pre-filled from profile defaults, session-only overrides. Budget off = unchanged Phase 3 behaviour.
+- `src/components/app/mealplan/DraftReviewSheet.tsx` — budget summary (budget, estimated shopping with unpriced count, status, pantry used, rescued, purchased ingredients remaining, confidence), per-meal reasons, and whole-plan recalculation after remove/regenerate. Acceptance and grocery generation unchanged.
+- `src/lib/mealPlan/inventory.test.ts` (new) — 15 tests covering pantry-first use, expiry order, false-rescue prevention, pack reuse, unknown purchase expiry, unpriced handling, envelopes, honest status, optimisation improvement/failure and reconciliation.
+
+**Known limitations**
+- Recipe lines from the catalogue frequently arrive without units or with cup/tbsp amounts. Those cannot be converted to a price basis or matched against pantry stock, so many plans currently show a large unpriced count and few pantry allocations. Estimates therefore stay "incomplete" in practice until better ingredient data or personal prices exist.
+- Category fallback prices remain coarse development estimates, never local retail prices.
+
 ## Budget-aware meal planning — Phase 2: profile defaults + personal purchase prices
 
 Scope: profile planning defaults, optional purchase-price capture on pantry items, and wiring personal prices into the Phase 1 resolver. No AI planning, no monthly envelope tracking, no supermarket/receipt integrations, no further budget UI.

@@ -15,6 +15,7 @@ import type { PantryItem } from "@/repositories/pantry";
 import { simulatePlan, type SimMeal, type SimPantryItem, type SimulationResult } from "./inventory";
 import { evaluateBudget, type BudgetStatus, type PlanningBudget } from "./budget";
 import { planMetrics, type PlanMetrics } from "./objective";
+import { reconcileWithGrocery, type ReconcileDifference } from "./reconcile";
 import type { DraftMeal } from "./draft";
 
 /**
@@ -55,6 +56,8 @@ export type DraftCost = {
   status: BudgetStatus;
   metrics: PlanMetrics;
   confidenceLabel: ReturnType<typeof confidenceLabel>;
+  /** Comparable disagreements with the shared grocery reference, if any. */
+  groceryDifferences: ReconcileDifference[];
 };
 
 /** Whole-plan evaluation. Called again after every change to the draft. */
@@ -64,16 +67,23 @@ export const evaluateDraft = (
   budget: PlanningBudget | null,
   currency: string,
 ): DraftCost => {
-  const sim = simulatePlan(draftToSimMeals(meals), toSimPantry(pantry), {
-    currency,
-    resolver: createPlanResolver(pantry, currency),
-  });
+  const simMeals = draftToSimMeals(meals);
+  const simPantry = toSimPantry(pantry);
+  const resolver = createPlanResolver(pantry, currency);
+  const sim = simulatePlan(simMeals, simPantry, { currency, resolver });
   const status = evaluateBudget(sim, budget);
+  // Cross-check against the shared grocery/cost reference. This never produces
+  // a second shopping calculation — it only reports comparable disagreements.
+  const groceryDifferences = reconcileWithGrocery(sim, simMeals, simPantry, {
+    currency,
+    resolver,
+  });
   return {
     sim,
     status,
     metrics: planMetrics(sim, status, new Set(meals.map((m) => m.spoonId)).size),
     confidenceLabel: confidenceLabel(sim.summary.confidence),
+    groceryDifferences,
   };
 };
 
