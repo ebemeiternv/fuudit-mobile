@@ -142,7 +142,9 @@ Your job is SELECTION ONLY. Rules:
 - Respect cooking-time preferences via the fitsCookingTime signal when set.
 - Never assign a candidate to a slot if doing so would conflict with the user's dietary requirements. Allergy safety is absolute — all candidates given to you already passed a strict allergy filter; do not reason beyond them.
 - It is always acceptable to leave a slot unassigned when no candidate fits well — a partial plan is a good plan.
-- Keep "notes" to one or two short sentences about the plan as a whole (e.g. which expiring ingredients it uses).`;
+- Keep "notes" to one or two short sentences about the plan as a whole (e.g. which expiring ingredients it uses).
+
+NEVER do arithmetic and never judge whether a plan fits a budget. All costs, quantities and budget comparisons are calculated deterministically outside this call. If "guidance" is present, the plan was measured as too expensive and you are being asked for cheaper REPLACEMENTS for the listed slots only: prefer candidates that lean on the listed reusableIngredients and on pantry/expiring signals, and prefer simpler, less ingredient-heavy dishes. Never compensate by changing servings, and never relax dietary requirements.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -167,7 +169,13 @@ Deno.serve(async (req) => {
   const userId = userRes.user.id;
 
   // ---- Body ----
-  let body: { slots?: Slot[]; candidates?: Candidate[]; constraints?: Constraints };
+  let body: {
+    slots?: Slot[];
+    candidates?: Candidate[];
+    constraints?: Constraints;
+    /** Deterministic cost figures from the client's simulation (Phase 4). */
+    guidance?: Record<string, unknown> | null;
+  };
   try {
     body = await req.json();
   } catch {
@@ -194,9 +202,13 @@ Deno.serve(async (req) => {
   }
 
   // ---- Prompt ----
+  const guidance = body?.guidance ?? null;
   const userPayload = {
-    task: "Assign real recipes to these meal slots.",
+    task: guidance
+      ? "Suggest cheaper replacement recipes for these meal slots."
+      : "Assign real recipes to these meal slots.",
     slots,
+    guidance,
     constraints: {
       servingsPerMeal: constraints.servings,
       dietaryRequirements: constraints.diets ?? [],
