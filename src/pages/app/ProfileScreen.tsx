@@ -48,6 +48,13 @@ const ProfileScreen = () => {
   const dietCount =
     (profile?.dietary_preferences?.length ?? 0) + (profile?.allergies?.length ?? 0);
   const dietary = dietCount ? `${dietCount} selected` : "Not set";
+  const planning = parsePlanningDefaults(
+    (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+  );
+  const budgetValue =
+    planning.budget.amount != null
+      ? `${planning.budget.amount} ${planning.budget.currency}`
+      : "Not set";
 
   const rows: {
     Icon: typeof Users;
@@ -73,6 +80,12 @@ const ProfileScreen = () => {
       label: "Dietary preferences",
       value: dietary,
       onClick: () => setOpenSheet("dietary"),
+    },
+    {
+      Icon: Wallet,
+      label: "Budget & planning",
+      value: budgetValue,
+      onClick: () => setOpenSheet("budget"),
     },
     {
       Icon: Bell,
@@ -166,6 +179,11 @@ const ProfileScreen = () => {
         open={openSheet === "dietary"}
         onOpenChange={(o) => setOpenSheet(o ? "dietary" : null)}
       />
+      <BudgetPlanningSheet
+        open={openSheet === "budget"}
+        onOpenChange={(o) => setOpenSheet(o ? "budget" : null)}
+      />
+
       <NotificationsSheet
         open={openSheet === "notifications"}
         onOpenChange={(o) => setOpenSheet(o ? "notifications" : null)}
