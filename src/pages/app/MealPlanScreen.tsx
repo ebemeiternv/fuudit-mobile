@@ -121,6 +121,41 @@ const MealPlanScreen = () => {
     }
   };
 
+  /** Regenerate one draft slot with fresh candidates (never repeats a chosen recipe). */
+  const regenerateSlot = async (slot: PlanSlot, excludeIds: number[]): Promise<DraftMeal | null> => {
+    if (!userId) return null;
+    try {
+      const defaults = parsePlanningDefaults(
+        (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+      );
+      const constraints = {
+        servings: profile?.household_size ?? 1,
+        diets: profile?.dietary_preferences ?? [],
+        allergies: profile?.allergies ?? [],
+        maxCookingMinutes: defaults.maxCookingMinutes,
+        prioritizePantry: defaults.prioritizePantry,
+        prioritizeExpiring: defaults.prioritizeExpiring,
+        nutritionStyles: defaults.nutritionStyles,
+        excludeRecipeIds: excludeIds,
+      };
+      const candidates = await fetchCandidates({
+        mealTypes: [slot.mealType],
+        pantry,
+        constraints,
+      });
+      const result = await generateMealPlan({ slots: [slot], candidates, constraints });
+      return result.meals[0] ?? null;
+    } catch (err) {
+      toast({
+        title: "Couldn't regenerate",
+        description:
+          err instanceof GenerateError ? err.message : "Please try again in a moment.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   return (
     <div>
       <ScreenHeader
@@ -132,6 +167,13 @@ const MealPlanScreen = () => {
         }
         right={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGeneratePlanOpen(true)}
+              aria-label="Generate a meal plan"
+              className="h-11 px-3 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform no-tap-highlight"
+            >
+              <Wand2 className="h-4 w-4" /> Generate
+            </button>
             <button
               onClick={() => setGenerateOpen(true)}
               aria-label="Generate grocery list from meal plan"
