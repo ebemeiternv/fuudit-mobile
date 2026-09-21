@@ -1,5 +1,23 @@
 # Fuudit Changelog
 
+## Budget-aware meal planning — Phase 2: profile defaults + personal purchase prices
+
+Scope: profile planning defaults, optional purchase-price capture on pantry items, and wiring personal prices into the Phase 1 resolver. No AI planning, no monthly envelope tracking, no supermarket/receipt integrations, no further budget UI.
+
+**Migration applied**
+- `pantry_items`: added optional `price_paid` (numeric) and `price_currency` (text), with CHECK constraints `price_paid >= 0` and `price_currency ~ '^[A-Z]{3}$'` (ISO-style codes only). Existing `package_quantity`, `package_unit` and `purchased_on` are reused — no duplicate pack-size or date fields.
+- `profiles`: added `planning_defaults jsonb NOT NULL DEFAULT '{}'`.
+
+**Files**
+- `src/lib/planningDefaults.ts` (new) — typed shape, forgiving parser (`parsePlanningDefaults`) that tolerates null/missing/older/malformed values, and `mergePlanningDefaults` which preserves unknown/future keys so saving one setting can't erase them. Supported ISO currencies: SEK, EUR, NOK, DKK, GBP, USD (default SEK).
+- `src/lib/cost/personalPrices.ts` (new) — maps pantry rows to `PersonalPriceObservation`. Requires a positive price, ISO currency, a known pack size (`package_quantity/unit`, else stocked `quantity/unit`) and a unit with a safe basis; otherwise the row is skipped as a price observation while the stored data is preserved — no invented unit prices.
+- `src/lib/cost/referencePrices.ts` — explicit header stating the category prices are coarse development estimates, NOT Swedish/local retail prices; last-resort and low-confidence only.
+- `src/components/app/pantry/PantryItemSheet.tsx` — optional "Paid" + currency inside the existing optional details; never required, negative values rejected, currency only saved alongside an amount, defaults to the profile currency.
+- `src/components/app/profile/ProfileSheets.tsx` — new `BudgetPlanningSheet` (budget amount/currency/period/buffer, meals usually planned, usual cooking time, priorities and nutrition styles) saved through the merge helper.
+- `src/pages/app/ProfileScreen.tsx` — new "Budget & planning" settings row.
+- `src/lib/cost/phase2.test.ts` (new) — 10 tests. Full suite: 29 pass / 0 fail (`bun test src/lib/cost`). Typecheck clean.
+
+
 ## Budget-aware meal planning — Phase 1: cost engine + price resolver
 
 Pure logic only. No schema migration, no UI, no AI planner, no monthly budget logic.
