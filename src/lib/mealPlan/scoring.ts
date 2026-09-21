@@ -50,6 +50,7 @@ export type RankedCandidate = {
   /** Recipe id from the existing catalogue flow (Spoonacular). */
   id: number;
   title: string;
+  image: string | null;
   readyMinutes: number | null;
   servings: number | null;
   diets: string[];
