@@ -1,11 +1,25 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag, Wand2 } from "lucide-react";
 import GenerateGrocerySheet from "@/components/app/grocery/GenerateGrocerySheet";
+import GenerateMealPlanSheet from "@/components/app/mealplan/GenerateMealPlanSheet";
+import DraftReviewSheet from "@/components/app/mealplan/DraftReviewSheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import LoadingState from "@/components/app/states/LoadingState";
 import ErrorState from "@/components/app/states/ErrorState";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
+import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import {
   useMealPlan,
   useDeleteMealPlanEntry,
@@ -21,6 +35,9 @@ import {
   startOfWeekMonday,
   toLocalIsoDate,
 } from "@/lib/dates";
+import { parsePlanningDefaults } from "@/lib/planningDefaults";
+import { fetchCandidates, generateMealPlan, GenerateError } from "@/lib/mealPlan/generate";
+import type { DraftMeal, DraftPlan, PlanSlot } from "@/lib/mealPlan/draft";
 import type { Database } from "@/integrations/supabase/types";
 import type { MealPlanEntryWithRecipe } from "@/repositories/mealPlan";
 import { toast } from "@/hooks/use-toast";
@@ -51,7 +68,12 @@ const MealPlanScreen = () => {
   });
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [generatePlanOpen, setGeneratePlanOpen] = useState(false);
+  const [draft, setDraft] = useState<DraftPlan | null>(null);
+  const [groceryPromptOpen, setGroceryPromptOpen] = useState(false);
   const { data: groceryItems = [] } = useGroceryItems(userId);
+  const { data: profile } = useProfile(userId);
+  const { data: pantry = [] } = usePantryItems(userId);
 
   const weekStart = useMemo(() => startOfWeekMonday(selected), [selected]);
   const weekDays = useMemo(
@@ -99,6 +121,41 @@ const MealPlanScreen = () => {
     }
   };
 
+  /** Regenerate one draft slot with fresh candidates (never repeats a chosen recipe). */
+  const regenerateSlot = async (slot: PlanSlot, excludeIds: number[]): Promise<DraftMeal | null> => {
+    if (!userId) return null;
+    try {
+      const defaults = parsePlanningDefaults(
+        (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+      );
+      const constraints = {
+        servings: profile?.household_size ?? 1,
+        diets: profile?.dietary_preferences ?? [],
+        allergies: profile?.allergies ?? [],
+        maxCookingMinutes: defaults.maxCookingMinutes,
+        prioritizePantry: defaults.prioritizePantry,
+        prioritizeExpiring: defaults.prioritizeExpiring,
+        nutritionStyles: defaults.nutritionStyles,
+        excludeRecipeIds: excludeIds,
+      };
+      const candidates = await fetchCandidates({
+        mealTypes: [slot.mealType],
+        pantry,
+        constraints,
+      });
+      const result = await generateMealPlan({ slots: [slot], candidates, constraints });
+      return result.meals[0] ?? null;
+    } catch (err) {
+      toast({
+        title: "Couldn't regenerate",
+        description:
+          err instanceof GenerateError ? err.message : "Please try again in a moment.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   return (
     <div>
       <ScreenHeader
@@ -110,6 +167,13 @@ const MealPlanScreen = () => {
         }
         right={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGeneratePlanOpen(true)}
+              aria-label="Generate a meal plan"
+              className="h-11 px-3 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))] font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform no-tap-highlight"
+            >
+              <Wand2 className="h-4 w-4" /> Generate
+            </button>
             <button
               onClick={() => setGenerateOpen(true)}
               aria-label="Generate grocery list from meal plan"
@@ -326,6 +390,44 @@ const MealPlanScreen = () => {
         defaultTo={toIso}
         existingPending={groceryItems.filter((i) => !i.checked)}
       />
+
+      <GenerateMealPlanSheet
+        open={generatePlanOpen}
+        onOpenChange={setGeneratePlanOpen}
+        weekDays={weekDays.map(toLocalIsoDate)}
+        entries={entries}
+        onGenerated={(d) => setDraft(d)}
+      />
+
+      <DraftReviewSheet
+        open={draft !== null}
+        draft={draft}
+        onClose={() => setDraft(null)}
+        onDraftChange={setDraft}
+        onRegenerateSlot={regenerateSlot}
+        onAccepted={() => setGroceryPromptOpen(true)}
+      />
+
+      <AlertDialog open={groceryPromptOpen} onOpenChange={setGroceryPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Plan saved</AlertDialogTitle>
+            <AlertDialogDescription>
+              Want to create the grocery list for these meals now? It only adds what's
+              missing after checking your pantry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Later</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => setGenerateOpen(true)}
+              className="bg-[hsl(var(--app-primary))] text-white"
+            >
+              Create grocery list
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

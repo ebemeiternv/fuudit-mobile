@@ -613,3 +613,21 @@ Run on a real iPhone with the installed PWA (Add to Home Screen). Sign in as a b
 - No background sync of failed mutations. Offline writes are not queued.
 - iOS installability is manual (Add to Home Screen) — expected browser behaviour.
 - No native push notifications, Capacitor, or App Store / Play submission in this slice.
+
+---
+
+## Phase 3 — AI-assisted meal-plan generation (in the existing Meal Plan) — 2026-09-21
+
+**What changed.** The existing Meal Plan screen gains a **Generate** button (next to *List*). It opens a setup sheet (days, meals, servings, cooking time, priorities — pre-filled from the Phase 2 profile planning defaults, overridable for that session only) and produces a **temporary draft** for review. Accepting writes real entries through the existing add-to-plan path; discarding changes nothing. Manual planning is untouched.
+
+**How it works.**
+- Candidates are **real Spoonacular catalogue recipes** fetched via the existing recipe flow (`byIngredients` from pantry names + per-meal-type `complexSearch` with diet/intolerances and `fillIngredients: true`). No AI-invented recipes, no fake IDs, no incomplete cache records — recipe detail is fetched through the existing `getDetail` on accept.
+- Deterministic candidate signals (`src/lib/mealPlan/scoring.ts`): pantry overlap, quantity-compatible matches (safe unit conversion), expiring-soon overlap, cooking-time fit, diet compatibility, strict allergy violation detection (word-based, partial words rejected).
+- Ineligible candidates (allergy violations, diet mismatch) are removed **in code before the AI sees them**; assignments are re-validated in code after.
+- New edge function `meal-plan-generate` (openai/gpt-6-astra, Responses API, streamed, strict json_schema `{ assignments: [{slotId, candidateId}], notes }`) only selects/ranks among valid candidates — it cannot invent a recipe.
+- Occupied slots default to **Keep**; replacing them requires an explicit choice. Slots with no safe candidate stay **unresolved** — retryable per-slot or fillable manually; a failed slot never invalidates the draft.
+- After accepting, the app offers a hand-off to the existing grocery generation (only missing quantities after pantry subtraction).
+
+**Explicitly out of scope (Phase 4):** budget optimisation, price-based selection, budget feedback loops, monthly envelopes, running purchase-inventory simulation, budget summaries.
+
+**Tests:** 41 unit tests pass (cost engine + meal-plan scoring). Edge function smoke-tested end-to-end (correctly preferred the vegetarian, expiring-spinach, 15-min candidate over a 3-hour stew). Full Generate → Review flow verified in the app on a phone-sized viewport.

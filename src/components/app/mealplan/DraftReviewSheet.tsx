@@ -1,0 +1,324 @@
+import { useMemo, useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Clock, Loader2, RefreshCw, Trash2, Leaf, Timer, Users } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useAddToMealPlan } from "@/hooks/queries/useMealPlan";
+import { shortWeekday } from "@/lib/dates";
+import type { DraftMeal, DraftPlan, PlanSlot } from "@/lib/mealPlan/draft";
+
+type Props = {
+  open: boolean;
+  draft: DraftPlan | null;
+  onClose: () => void;
+  /** Called with the updated draft after remove/regenerate. */
+  onDraftChange: (draft: DraftPlan) => void;
+  /** Regenerate a single slot; resolves to the replacement meal or null. */
+  onRegenerateSlot: (slot: PlanSlot, excludeIds: number[]) => Promise<DraftMeal | null>;
+  /** Called after a successful accept with how many meals were saved. */
+  onAccepted: (count: number) => void;
+};
+
+const SLOT_LABEL: Record<string, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+const DraftReviewSheet = ({
+  open,
+  draft,
+  onClose,
+  onDraftChange,
+  onRegenerateSlot,
+  onAccepted,
+}: Props) => {
+  const { user } = useAuth();
+  const addToPlan = useAddToMealPlan(user?.id);
+  const [accepting, setAccepting] = useState(false);
+  const [busySlot, setBusySlot] = useState<string | null>(null);
+
+  const byDay = useMemo(() => {
+    const m = new Map<string, DraftMeal[]>();
+    for (const meal of draft?.meals ?? []) {
+      const list = m.get(meal.date) ?? [];
+      list.push(meal);
+      m.set(meal.date, list);
+    }
+    for (const list of m.values()) {
+      list.sort((a, b) => a.slotId.localeCompare(b.slotId));
+    }
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [draft]);
+
+  const pantryCount = useMemo(
+    () => new Set((draft?.meals ?? []).flatMap((m) => m.pantryUsed)).size,
+    [draft],
+  );
+  const rescuedCount = useMemo(
+    () => new Set((draft?.meals ?? []).flatMap((m) => m.expiringUsed)).size,
+    [draft],
+  );
+
+  if (!draft) return null;
+
+  const removeMeal = (slotId: string) => {
+    const meal = draft.meals.find((m) => m.slotId === slotId);
+    const slot = meal
+      ? { slotId: meal.slotId, date: meal.date, mealType: meal.mealType, occupiedBy: null }
+      : null;
+    onDraftChange({
+      ...draft,
+      meals: draft.meals.filter((m) => m.slotId !== slotId),
+      unresolved: slot ? [...draft.unresolved, slot] : draft.unresolved,
+    });
+  };
+
+  const regenerate = async (slot: PlanSlot) => {
+    if (busySlot) return;
+    setBusySlot(slot.slotId);
+    try {
+      const excludeIds = draft.meals.map((m) => m.spoonId);
+      const replacement = await onRegenerateSlot(slot, excludeIds);
+      if (replacement) {
+        onDraftChange({
+          ...draft,
+          meals: [...draft.meals.filter((m) => m.slotId !== slot.slotId), replacement],
+          unresolved: draft.unresolved.filter((s) => s.slotId !== slot.slotId),
+        });
+      } else {
+        toast({
+          title: "Couldn't find an alternative",
+          description: "Try removing the meal and planning it manually.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setBusySlot(null);
+    }
+  };
+
+  const accept = async () => {
+    if (accepting || !draft.meals.length) return;
+    setAccepting(true);
+    let saved = 0;
+    const failures: string[] = [];
+    try {
+      for (const meal of draft.meals) {
+        try {
+          // The existing save path: full recipe detail is fetched and cached
+          // before the meal-plan entry is created — no incomplete records.
+          await addToPlan.mutateAsync({
+            payload: { kind: "spoon", spoonId: meal.spoonId, hint: { title: meal.title, image: meal.image } },
+            date: meal.date,
+            mealType: meal.mealType,
+            servings: meal.servings,
+          });
+          saved += 1;
+        } catch {
+          failures.push(meal.title);
+        }
+      }
+      if (failures.length) {
+        toast({
+          title: `Saved ${saved} of ${draft.meals.length} meals`,
+          description: `Couldn't save: ${failures.join(", ")}. Add them manually from the plan.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Plan saved", description: `${saved} meals added to your week.` });
+      }
+      if (saved > 0) onAccepted(saved);
+      onClose();
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && !accepting && onClose()}>
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[92dvh] overflow-y-auto">
+        <SheetHeader className="text-left">
+          <SheetTitle>Review your plan</SheetTitle>
+          <SheetDescription>
+            A draft — nothing is saved until you accept it.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="py-4 space-y-5">
+          {(pantryCount > 0 || rescuedCount > 0) && (
+            <div className="flex gap-2">
+              {pantryCount > 0 && (
+                <div className="flex-1 app-card-flat p-3 text-center">
+                  <p className="text-lg font-bold text-[hsl(var(--app-foreground))]">{pantryCount}</p>
+                  <p className="text-[11px] font-medium text-[hsl(var(--app-muted))]">
+                    pantry ingredient{pantryCount === 1 ? "" : "s"} used
+                  </p>
+                </div>
+              )}
+              {rescuedCount > 0 && (
+                <div className="flex-1 app-card-flat p-3 text-center">
+                  <p className="text-lg font-bold text-[hsl(var(--app-foreground))]">{rescuedCount}</p>
+                  <p className="text-[11px] font-medium text-[hsl(var(--app-muted))]">
+                    expiring item{rescuedCount === 1 ? "" : "s"} rescued
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {byDay.map(([date, meals]) => (
+            <section key={date} className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--app-primary))] px-1">
+                {shortWeekday(new Date(date + "T00:00:00"))} {Number(date.slice(8, 10))}
+              </p>
+              {meals.map((meal) => (
+                <div key={meal.slotId} className="app-card p-3.5 flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-2xl overflow-hidden bg-gradient-to-br from-[hsl(var(--app-primary-soft))] to-[hsl(var(--app-accent-sky-soft))] grid place-items-center shrink-0">
+                    {meal.image ? (
+                      <img src={meal.image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="text-xl">🥗</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--app-muted))]">
+                      {SLOT_LABEL[meal.mealType] ?? meal.mealType}
+                    </p>
+                    <p className="font-semibold text-sm text-[hsl(var(--app-foreground))] line-clamp-2 leading-snug">
+                      {meal.title}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[hsl(var(--app-muted))]">
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="h-3 w-3" /> {meal.servings}
+                      </span>
+                      {meal.readyMinutes != null && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {meal.readyMinutes} min
+                        </span>
+                      )}
+                      {meal.pantryUsed.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[hsl(var(--app-primary))]">
+                          <Leaf className="h-3 w-3" /> uses {meal.pantryUsed.length} you have
+                        </span>
+                      )}
+                      {meal.expiringUsed.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[hsl(var(--app-primary))]">
+                          <Timer className="h-3 w-3" /> rescues {meal.expiringUsed.length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      aria-label={`Regenerate ${SLOT_LABEL[meal.mealType]}`}
+                      disabled={busySlot !== null || accepting}
+                      onClick={() =>
+                        regenerate({
+                          slotId: meal.slotId,
+                          date: meal.date,
+                          mealType: meal.mealType,
+                          occupiedBy: null,
+                        })
+                      }
+                      className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center active:scale-95 transition-transform disabled:opacity-40 no-tap-highlight"
+                    >
+                      {busySlot === meal.slotId ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${meal.title}`}
+                      disabled={busySlot !== null || accepting}
+                      onClick={() => removeMeal(meal.slotId)}
+                      className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center text-[hsl(var(--app-danger))] active:scale-95 transition-transform disabled:opacity-40 no-tap-highlight"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </section>
+          ))}
+
+          {draft.unresolved.length > 0 && (
+            <section className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[hsl(var(--app-muted))] px-1">
+                Needs your touch
+              </p>
+              {draft.unresolved.map((slot) => (
+                <div
+                  key={slot.slotId}
+                  className="app-card-flat p-3.5 flex items-center gap-3 border border-dashed border-[hsl(var(--app-border))]"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[hsl(var(--app-foreground))]">
+                      {SLOT_LABEL[slot.mealType]} · {shortWeekday(new Date(slot.date + "T00:00:00"))}{" "}
+                      {Number(slot.date.slice(8, 10))}
+                    </p>
+                    <p className="text-xs text-[hsl(var(--app-muted))]">
+                      No safe recipe found — retry or plan it manually.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Retry ${SLOT_LABEL[slot.mealType]}`}
+                    disabled={busySlot !== null || accepting}
+                    onClick={() => regenerate(slot)}
+                    className="h-11 w-11 rounded-full bg-white border border-[hsl(var(--app-border))] grid place-items-center active:scale-95 transition-transform disabled:opacity-40 no-tap-highlight"
+                  >
+                    {busySlot === slot.slotId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+
+        <SheetFooter className="safe-bottom flex-row gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 rounded-xl"
+            onClick={onClose}
+            disabled={accepting}
+          >
+            Discard
+          </Button>
+          <Button
+            onClick={accept}
+            disabled={accepting || !draft.meals.length}
+            className="flex-1 h-12 rounded-xl font-semibold bg-[hsl(var(--app-primary))] hover:bg-[hsl(var(--app-primary))]/90 text-white"
+          >
+            {accepting ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+              </span>
+            ) : (
+              `Accept plan (${draft.meals.length})`
+            )}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+export default DraftReviewSheet;
