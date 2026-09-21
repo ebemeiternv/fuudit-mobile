@@ -41,6 +41,12 @@ import {
 import { Sparkles } from "lucide-react";
 import { useSmartDefaults } from "@/hooks/queries/useProductIntelligence";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
+import {
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+  preferredCurrency,
+} from "@/lib/planningDefaults";
 import type { PantryItem } from "@/repositories/pantry";
 
 const schema = z.object({
@@ -55,6 +61,12 @@ const schema = z.object({
   purchased_on: z.string().optional(),
   expires_on: z.string().optional(),
   notes: z.string().max(500).optional(),
+  // Price is always optional; when given it must be a non-negative number.
+  price_paid: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(Number(v)), "Must be a number")
+    .refine((v) => !v || Number(v) >= 0, "Can't be negative"),
 });
 
 type FormState = {
@@ -66,6 +78,9 @@ type FormState = {
   purchased_on: string;
   expires_on: string;
   notes: string;
+  /** Optional: what was paid for this pack. Feeds personal price estimates. */
+  price_paid: string;
+  price_currency: string;
   // Optional product metadata (from barcode scans). Not user-editable in the
   // form itself, but preserved so submit can persist it.
   barcode: string;
@@ -86,6 +101,8 @@ const empty: FormState = {
   purchased_on: "",
   expires_on: "",
   notes: "",
+  price_paid: "",
+  price_currency: DEFAULT_CURRENCY,
   barcode: "",
   brand: "",
   product_image_url: "",
@@ -117,12 +134,18 @@ type Props = {
     product_source_id?: string | null;
     package_quantity?: number | null;
     package_unit?: UnitType | null;
+    price_paid?: number | null;
+    price_currency?: string | null;
   }) => Promise<void>;
   saving?: boolean;
 };
 
 const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, saving }: Props) => {
   const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id);
+  const profileCurrency = preferredCurrency(
+    (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+  );
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Track which fields the user has touched so learned defaults never
@@ -179,14 +202,20 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
             : "",
         package_unit:
           ((item as { package_unit?: UnitType | null }).package_unit as UnitType) ?? "",
+        price_paid:
+          (item as { price_paid?: number | null }).price_paid != null
+            ? String((item as { price_paid?: number | null }).price_paid)
+            : "",
+        price_currency:
+          (item as { price_currency?: string | null }).price_currency || profileCurrency,
       });
     } else {
-      setForm({ ...empty, ...(initialValues ?? {}) });
+      setForm({ ...empty, price_currency: profileCurrency, ...(initialValues ?? {}) });
     }
     setErrors({});
     setTouched({});
     setPrefillApplied(false);
-  }, [open, item, initialValues]);
+  }, [open, item, initialValues, profileCurrency]);
 
   // Fill blank fields from learned defaults exactly once per open. Never
   // overwrite anything the user has touched or that already came from a scan.
@@ -244,6 +273,10 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
         product_source_id: form.product_source_id || null,
         package_quantity: form.package_quantity ? Number(form.package_quantity) : null,
         package_unit: form.package_unit ? (form.package_unit as UnitType) : null,
+        // Optional. Currency only travels with an actual amount.
+        price_paid: form.price_paid !== "" ? Number(form.price_paid) : null,
+        price_currency:
+          form.price_paid !== "" ? form.price_currency || profileCurrency : null,
       });
       onOpenChange(false);
     } catch (err) {
@@ -535,6 +568,49 @@ const PantryItemSheet = ({ open, onOpenChange, item, initialValues, onSubmit, sa
                 </Popover>
               </div>
             </div>
+
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="price_paid">Paid (optional)</Label>
+                <Input
+                  id="price_paid"
+                  inputMode="decimal"
+                  value={form.price_paid}
+                  onChange={(e) => set("price_paid", e.target.value)}
+                  placeholder="e.g. 24"
+                  className="h-12 rounded-xl"
+                />
+                {errors.price_paid && (
+                  <p className="text-xs text-[hsl(var(--app-danger))]">
+                    {errors.price_paid}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Currency</Label>
+                <Select
+                  value={form.price_currency}
+                  onValueChange={(v) => set("price_currency", v)}
+                >
+                  <SelectTrigger className="h-12 rounded-xl w-[104px]" aria-label="Currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="-mt-2 text-xs text-[hsl(var(--app-muted))]">
+              Adding what you paid helps Fuudit estimate grocery costs from your
+              own prices instead of rough averages.
+            </p>
+
+
 
             <div className="space-y-1.5">
               <Label htmlFor="notes">Notes (optional)</Label>
