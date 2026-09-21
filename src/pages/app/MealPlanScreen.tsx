@@ -1,11 +1,25 @@
 import { useMemo, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarCheck, ShoppingBag, Wand2 } from "lucide-react";
 import GenerateGrocerySheet from "@/components/app/grocery/GenerateGrocerySheet";
+import GenerateMealPlanSheet from "@/components/app/mealplan/GenerateMealPlanSheet";
+import DraftReviewSheet from "@/components/app/mealplan/DraftReviewSheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useGroceryItems } from "@/hooks/queries/useGroceryItems";
 import ScreenHeader from "@/components/app/ScreenHeader";
 import LoadingState from "@/components/app/states/LoadingState";
 import ErrorState from "@/components/app/states/ErrorState";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/queries/useProfile";
+import { usePantryItems } from "@/hooks/queries/usePantryItems";
 import {
   useMealPlan,
   useDeleteMealPlanEntry,
@@ -21,6 +35,9 @@ import {
   startOfWeekMonday,
   toLocalIsoDate,
 } from "@/lib/dates";
+import { parsePlanningDefaults } from "@/lib/planningDefaults";
+import { fetchCandidates, generateMealPlan, GenerateError } from "@/lib/mealPlan/generate";
+import type { DraftMeal, DraftPlan, PlanSlot } from "@/lib/mealPlan/draft";
 import type { Database } from "@/integrations/supabase/types";
 import type { MealPlanEntryWithRecipe } from "@/repositories/mealPlan";
 import { toast } from "@/hooks/use-toast";
