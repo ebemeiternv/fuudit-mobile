@@ -138,7 +138,8 @@ const DraftReviewSheet = ({
             servings: meal.servings,
           });
           saved += 1;
-        } catch {
+        } catch (err) {
+          console.error("Failed to save generated meal", meal.title, err);
           failures.push(meal.title);
         }
       }
