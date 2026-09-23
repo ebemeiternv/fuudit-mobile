@@ -26,6 +26,50 @@ export const recipesRepository = {
     if (error) throw error;
     return data;
   },
+  /**
+   * Store a recipe Fuudit wrote itself. Uses its own `fuudit_ai` source so it
+   * can never collide with or overwrite a cached catalogue recipe.
+   */
+  async insertAiRecipe(r: {
+    title: string;
+    servings: number | null;
+    readyMinutes: number | null;
+    summary: string | null;
+    ingredients: { name: string; amount: number | null; unit: string | null }[];
+    steps: string[];
+  }): Promise<Recipe> {
+    const row: TablesInsert<"recipes"> = {
+      source: "fuudit_ai",
+      source_id: crypto.randomUUID(),
+      title: r.title,
+      image: null,
+      servings: r.servings,
+      ready_minutes: r.readyMinutes,
+      ingredients: r.ingredients.map((i) => ({
+        name: i.name,
+        amount: i.amount,
+        unit: i.unit,
+        original: [i.amount ?? "", i.unit ?? "", i.name].filter(Boolean).join(" ").trim(),
+      })) as unknown as TablesInsert<"recipes">["ingredients"],
+      instructions: r.steps.join("\n"),
+      data: {
+        steps: r.steps.map((step, idx) => ({ number: idx + 1, step })),
+        diets: [],
+        dishTypes: [],
+        dietaryFlags: {},
+        nutrition: [],
+        summary: r.summary,
+        sourceUrl: null,
+        sourceName: "Fuudit",
+        creditsText: "Recipe written by Fuudit",
+        license: null,
+        aiGenerated: true,
+      } as unknown as TablesInsert<"recipes">["data"],
+    };
+    const { data, error } = await supabase.from("recipes").insert(row).select("*").single();
+    if (error) throw error;
+    return data;
+  },
   async getById(id: string): Promise<Recipe | null> {
     const { data, error } = await supabase.from("recipes").select("*").eq("id", id).maybeSingle();
     if (error) throw error;

@@ -15,6 +15,7 @@ import type { PantryItem } from "@/repositories/pantry";
 import type { SpoonSearchHit, SpoonByIngredientsHit } from "@/lib/spoonacular";
 import {
   computeSignals,
+  detectAllergyViolations,
   isEligible,
   rankCandidates,
   type CandidateIngredientSignal,
@@ -276,6 +277,7 @@ export const generateMealPlan = async (args: {
       slotId: slot.slotId,
       date: slot.date,
       mealType: slot.mealType,
+      kind: "catalogue",
       spoonId: cand.id,
       title: cand.title,
       image: cand.image,
@@ -289,6 +291,8 @@ export const generateMealPlan = async (args: {
       })),
       pantryUsed: cand.signals.pantryOverlap,
       expiringUsed: cand.signals.expiringOverlap,
+      why: typeof a.why === "string" && a.why.trim() ? a.why.trim() : null,
+      twist: typeof a.twist === "string" && a.twist.trim() ? a.twist.trim() : null,
     });
   }
 
@@ -298,4 +302,142 @@ export const generateMealPlan = async (args: {
     notes: typeof data?.notes === "string" ? data.notes : null,
     requestId: typeof data?.requestId === "string" ? data.requestId : null,
   };
+};
+
+/* ------------------------------------------------- Fuudit-written recipes */
+
+/**
+ * Ask Fuudit to write original recipes for slots the catalogue couldn't fill.
+ * Results are a separate, clearly-labelled kind: they never get a Spoonacular
+ * id and never overwrite cached catalogue recipes. Allergy safety is re-checked
+ * in code here — an invented recipe that mentions an allergen is discarded.
+ */
+export const inventMeals = async (args: {
+  slots: PlanSlot[];
+  pantry: PantryItem[];
+  constraints: GenerateConstraints;
+}): Promise<DraftMeal[]> => {
+  const { slots, pantry, constraints } = args;
+  if (!slots.length) return [];
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const pantryPayload = pantry
+    .filter((p) => p.status === "active")
+    .slice(0, 30)
+    .map((p) => ({
+      name: p.name,
+      expiringSoon: !!p.expires_on && p.expires_on <= addDaysIso(todayIso, 4),
+    }));
+
+  const { data, error } = await supabase.functions.invoke("meal-plan-invent", {
+    body: {
+      slots: slots.map((s) => ({ slotId: s.slotId, date: s.date, mealType: s.mealType })),
+      pantry: pantryPayload,
+      constraints: {
+        servings: constraints.servings,
+        diets: constraints.diets,
+        allergies: constraints.allergies,
+        maxCookingMinutes: constraints.maxCookingMinutes,
+        nutritionStyles: constraints.nutritionStyles,
+      },
+    },
+  });
+
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    throw new GenerateError(
+      status === 429
+        ? "gateway_rate_limited"
+        : status === 402
+          ? "gateway_credits_exhausted"
+          : status === 401
+            ? "unauthenticated"
+            : "unknown_error",
+      error.message,
+    );
+  }
+  if (data?.error) {
+    throw new GenerateError(String(data.error), String(data.message ?? "Couldn't write a recipe"));
+  }
+
+  const slotById = new Map(slots.map((s) => [s.slotId, s]));
+  const pantryNames = new Set(
+    pantryPayload.map((p) => p.name.trim().toLowerCase()).filter(Boolean),
+  );
+  const expiringNames = new Set(
+    pantryPayload.filter((p) => p.expiringSoon).map((p) => p.name.trim().toLowerCase()),
+  );
+
+  const out: DraftMeal[] = [];
+  for (const r of (data?.recipes ?? []) as InventedRecipe[]) {
+    const slot = slotById.get(r.slotId);
+    if (!slot) continue;
+    const ingredients = (r.ingredients ?? [])
+      .filter((i) => i && typeof i.name === "string" && i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        amount: typeof i.amount === "number" ? i.amount : null,
+        unit: i.unit ? String(i.unit) : null,
+      }));
+    const steps = (r.steps ?? []).filter((s) => typeof s === "string" && s.trim());
+    if (!r.title?.trim() || ingredients.length < 2 || steps.length < 2) continue;
+
+    // Allergies are absolute and re-validated here, never trusted to the model.
+    if (constraints.allergies.length) {
+      const violations = detectAllergyViolations(
+        ingredients.map((i) => ({ name: i.name, amount: i.amount, unit: i.unit })),
+        constraints.allergies,
+      );
+      if (violations.length) continue;
+    }
+
+    const used = ingredients
+      .map((i) => i.name.trim().toLowerCase())
+      .filter((n) => pantryNames.has(n));
+
+    out.push({
+      slotId: slot.slotId,
+      date: slot.date,
+      mealType: slot.mealType,
+      kind: "ai",
+      spoonId: null,
+      aiRecipe: {
+        title: r.title.trim(),
+        readyMinutes: typeof r.readyMinutes === "number" ? r.readyMinutes : null,
+        servings: typeof r.servings === "number" ? r.servings : constraints.servings,
+        summary: typeof r.summary === "string" ? r.summary : null,
+        ingredients,
+        steps,
+      },
+      title: r.title.trim(),
+      image: null,
+      readyMinutes: typeof r.readyMinutes === "number" ? r.readyMinutes : null,
+      servings: constraints.servings,
+      recipeServings: typeof r.servings === "number" ? r.servings : constraints.servings,
+      ingredients,
+      pantryUsed: Array.from(new Set(used)),
+      expiringUsed: Array.from(new Set(used.filter((n) => expiringNames.has(n)))),
+      why: typeof r.why === "string" && r.why.trim() ? r.why.trim() : null,
+      twist: typeof r.twist === "string" && r.twist.trim() ? r.twist.trim() : null,
+    });
+  }
+  return out;
+};
+
+type InventedRecipe = {
+  slotId: string;
+  title: string;
+  readyMinutes: number | null;
+  servings: number | null;
+  summary: string | null;
+  ingredients: { name: string; amount: number | null; unit: string | null }[];
+  steps: string[];
+  why: string | null;
+  twist: string | null;
+};
+
+const addDaysIso = (iso: string, days: number): string => {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 };

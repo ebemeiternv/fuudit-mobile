@@ -32,7 +32,7 @@ export type SubstitutionRequest = {
   excludeRecipeIds: number[];
 };
 
-export type OptimizeDeps<M extends { slotId: string; spoonId: number }> = {
+export type OptimizeDeps<M extends PlanMeal> = {
   simulate: (meals: M[]) => SimulationResult;
   /** Ask the planner for replacements. Missing slots simply stay as they are. */
   substitute: (req: SubstitutionRequest) => Promise<M[]>;
@@ -51,10 +51,12 @@ export type OptimizeResult<M> = {
   stillOverBudget: boolean;
 };
 
-const distinctRecipes = <M extends { spoonId: number }>(meals: M[]): number =>
-  new Set(meals.map((m) => m.spoonId)).size;
+type PlanMeal = { slotId: string; spoonId: number | null };
 
-const evaluate = <M extends { slotId: string; spoonId: number }>(
+const distinctRecipes = <M extends PlanMeal>(meals: M[]): number =>
+  new Set(meals.map((m) => m.spoonId ?? `slot:${m.slotId}`)).size;
+
+const evaluate = <M extends PlanMeal>(
   meals: M[],
   budget: PlanningBudget | null,
   simulate: (meals: M[]) => SimulationResult,
@@ -65,7 +67,7 @@ const evaluate = <M extends { slotId: string; spoonId: number }>(
   return { sim, status, metrics };
 };
 
-export const optimizePlan = async <M extends { slotId: string; spoonId: number }>(
+export const optimizePlan = async <M extends PlanMeal>(
   meals: M[],
   budget: PlanningBudget | null,
   deps: OptimizeDeps<M>,
@@ -75,7 +77,9 @@ export const optimizePlan = async <M extends { slotId: string; spoonId: number }
 
   let best = { meals, ...evaluate(meals, budget, deps.simulate) };
   let rounds = 0;
-  const tried = new Set<number>(meals.map((m) => m.spoonId));
+  const tried = new Set<number>(
+    meals.map((m) => m.spoonId).filter((id): id is number => id != null),
+  );
 
   // No budget, or already within it → nothing to optimise.
   while (budget && needsCheaperPlan(best.status) && rounds < maxRounds) {
@@ -120,7 +124,7 @@ export const optimizePlan = async <M extends { slotId: string; spoonId: number }
     if (!replacements.length) break;
 
     const bySlot = new Map(replacements.map((r) => [r.slotId, r]));
-    for (const r of replacements) tried.add(r.spoonId);
+    for (const r of replacements) if (r.spoonId != null) tried.add(r.spoonId);
     const nextMeals = best.meals.map((m) => bySlot.get(m.slotId) ?? m);
 
     // Whole plan is recalculated — one swap changes shared ingredients.

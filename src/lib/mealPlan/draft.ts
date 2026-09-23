@@ -41,13 +41,31 @@ export const buildSlots = (
   return out;
 };
 
-/** One proposed meal in the draft. Always a real catalogue recipe. */
+/**
+ * A complete recipe written by Fuudit for a slot the catalogue couldn't fill.
+ * Kept as its own clearly-labelled kind — it is never mixed into the shared
+ * Spoonacular cache and never carries a Spoonacular id.
+ */
+export type AiDraftRecipe = {
+  title: string;
+  readyMinutes: number | null;
+  servings: number | null;
+  summary: string | null;
+  ingredients: { name: string; amount: number | null; unit: string | null }[];
+  steps: string[];
+};
+
+/** One proposed meal in the draft. */
 export type DraftMeal = {
   slotId: string;
   date: string;
   mealType: MealType;
-  /** Spoonacular id — the existing cache flow fetches full detail on accept. */
-  spoonId: number;
+  /** Where the recipe came from. */
+  kind: "catalogue" | "ai";
+  /** Spoonacular id for catalogue meals; null for Fuudit-written recipes. */
+  spoonId: number | null;
+  /** Full structured recipe when kind === "ai". */
+  aiRecipe?: AiDraftRecipe | null;
   title: string;
   image: string | null;
   readyMinutes: number | null;
@@ -60,6 +78,10 @@ export type DraftMeal = {
   pantryUsed: string[];
   /** Pantry items expiring soon that this recipe uses. */
   expiringUsed: string[];
+  /** Short personal reason from the planner for choosing this meal. */
+  why?: string | null;
+  /** Optional suggested swap/addition using what the user already has. */
+  twist?: string | null;
 };
 
 export type DraftPlan = {
