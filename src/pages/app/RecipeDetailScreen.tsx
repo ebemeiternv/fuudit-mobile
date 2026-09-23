@@ -130,6 +130,7 @@ const RecipeDetailScreen = () => {
   const sourceName: string | null = data.sourceName ?? null;
   const creditsText: string | null = data.creditsText ?? null;
   const summaryHtml = sanitizeHtml(data.summary);
+  const isFuuditWritten = recipe.source === "fuudit_ai" || data.aiGenerated === true;
   const instructionsHtml = steps.length === 0 ? sanitizeHtml(recipe.instructions) : "";
 
   return (
@@ -155,6 +156,7 @@ const RecipeDetailScreen = () => {
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
+        {!isFuuditWritten && (
         <button
           onClick={handleToggleSave}
           disabled={saveMut.isPending || unsaveMut.isPending}
@@ -168,6 +170,7 @@ const RecipeDetailScreen = () => {
             <Bookmark className="h-4 w-4" aria-hidden="true" />
           )}
         </button>
+        )}
       </div>
 
       <div className="px-5 pt-5 space-y-6">
@@ -187,6 +190,11 @@ const RecipeDetailScreen = () => {
               </span>
             )}
           </div>
+          {isFuuditWritten && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))]">
+              Written by Fuudit
+            </p>
+          )}
           {diets.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {diets.map((d) => (
@@ -303,7 +311,9 @@ const RecipeDetailScreen = () => {
         )}
 
         <p className="text-[11px] text-[hsl(var(--app-muted))] text-center pt-2">
-          {creditsText ?? sourceName ?? "Recipe data via Spoonacular."}{" "}
+          {isFuuditWritten
+            ? "Written by Fuudit for your plan — a suggestion, not a tested recipe."
+            : (creditsText ?? sourceName ?? "Recipe data via Spoonacular.")}{" "}
           {data.license ? `· ${data.license}` : ""}
         </p>
       </div>
