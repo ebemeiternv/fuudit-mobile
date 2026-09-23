@@ -57,6 +57,18 @@ export const useDeleteMealPlanEntry = (userId: string | undefined) => {
 export type AddToMealPlanPayload =
   | { kind: "recipe"; recipeId: string }
   | { kind: "spoon"; spoonId: number | string; hint?: { title: string; image?: string | null } }
+  | {
+      /** A recipe Fuudit wrote — stored under its own source, never as catalogue data. */
+      kind: "ai";
+      recipe: {
+        title: string;
+        servings: number | null;
+        readyMinutes: number | null;
+        summary: string | null;
+        ingredients: { name: string; amount: number | null; unit: string | null }[];
+        steps: string[];
+      };
+    }
   | { kind: "custom"; customTitle: string };
 
 export const useAddToMealPlan = (userId: string | undefined) => {
@@ -87,6 +99,9 @@ export const useAddToMealPlan = (userId: string | undefined) => {
           );
           recipeId = cached.id;
         }
+      } else if (args.payload.kind === "ai") {
+        const stored = await recipesRepository.insertAiRecipe(args.payload.recipe);
+        recipeId = stored.id;
       } else {
         customTitle = args.payload.customTitle.trim();
         if (!customTitle) throw new Error("Custom meal needs a title");
