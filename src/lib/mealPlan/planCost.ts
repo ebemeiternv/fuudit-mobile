@@ -81,7 +81,7 @@ export const evaluateDraft = (
   return {
     sim,
     status,
-    metrics: planMetrics(sim, status, new Set(meals.map((m) => m.spoonId)).size),
+    metrics: planMetrics(sim, status, new Set(meals.map((m) => m.spoonId ?? `slot:${m.slotId}`)).size),
     confidenceLabel: confidenceLabel(sim.summary.confidence),
     groceryDifferences,
   };

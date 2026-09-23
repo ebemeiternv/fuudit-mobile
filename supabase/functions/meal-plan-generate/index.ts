@@ -123,8 +123,10 @@ const PLAN_SCHEMA = {
           properties: {
             slotId: { type: "string" },
             candidateId: { type: "number" },
+            why: { type: ["string", "null"] },
+            twist: { type: ["string", "null"] },
           },
-          required: ["slotId", "candidateId"],
+          required: ["slotId", "candidateId", "why", "twist"],
         },
       },
       notes: { type: ["string", "null"] },
@@ -143,6 +145,9 @@ Your job is SELECTION ONLY. Rules:
 - Never assign a candidate to a slot if doing so would conflict with the user's dietary requirements. Allergy safety is absolute — all candidates given to you already passed a strict allergy filter; do not reason beyond them.
 - It is always acceptable to leave a slot unassigned when no candidate fits well — a partial plan is a good plan.
 - Keep "notes" to one or two short sentences about the plan as a whole (e.g. which expiring ingredients it uses).
+- For every assignment write "why": ONE short warm sentence, addressed to the person, explaining why you picked this recipe for them — reference their pantry, expiring food, cooking time or the rest of the week. Never mention scores, signals or ids. Never invent facts that the signals don't show.
+- "twist" is optional (use null when you have nothing useful): one short suggestion for a swap or addition using something the signals show they already have, without changing what the recipe fundamentally is.
+
 
 NEVER do arithmetic and never judge whether a plan fits a budget. All costs, quantities and budget comparisons are calculated deterministically outside this call. If "guidance" is present, the plan was measured as too expensive and you are being asked for cheaper REPLACEMENTS for the listed slots only: prefer candidates that lean on the listed reusableIngredients and on pantry/expiring signals, and prefer simpler, less ingredient-heavy dishes. Never compensate by changing servings, and never relax dietary requirements.`;
 
@@ -318,7 +323,10 @@ Deno.serve(async (req) => {
   }
 
   // ---- Parse + validate ----
-  let plan: { assignments: { slotId: string; candidateId: number }[]; notes: string | null };
+  let plan: {
+    assignments: { slotId: string; candidateId: number; why?: string | null; twist?: string | null }[];
+    notes: string | null;
+  };
   try {
     plan = JSON.parse(text);
   } catch {
@@ -329,13 +337,23 @@ Deno.serve(async (req) => {
   const validSlotIds = new Set(slots.map((s) => s.slotId));
   const validCandidateIds = new Set(usable.map((c) => c.id));
   const seenSlots = new Set<string>();
-  const assignments: { slotId: string; candidateId: number }[] = [];
+  const assignments: {
+    slotId: string;
+    candidateId: number;
+    why: string | null;
+    twist: string | null;
+  }[] = [];
   for (const a of Array.isArray(plan?.assignments) ? plan.assignments : []) {
     if (typeof a?.slotId !== "string" || typeof a?.candidateId !== "number") continue;
     if (!validSlotIds.has(a.slotId) || !validCandidateIds.has(a.candidateId)) continue;
     if (seenSlots.has(a.slotId)) continue;
     seenSlots.add(a.slotId);
-    assignments.push({ slotId: a.slotId, candidateId: a.candidateId });
+    assignments.push({
+      slotId: a.slotId,
+      candidateId: a.candidateId,
+      why: typeof a.why === "string" && a.why.trim() ? a.why.trim() : null,
+      twist: typeof a.twist === "string" && a.twist.trim() ? a.twist.trim() : null,
+    });
   }
 
   logStage(requestId, "generate_done", {

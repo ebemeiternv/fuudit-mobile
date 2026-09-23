@@ -24,7 +24,7 @@ import {
 } from "@/lib/planningDefaults";
 import { shortWeekday, todayLocalIso } from "@/lib/dates";
 import { buildSlots, type DraftMeal, type DraftPlan, type MealType, type PlanSlot } from "@/lib/mealPlan/draft";
-import { fetchCandidates, generateMealPlan, GenerateError } from "@/lib/mealPlan/generate";
+import { fetchCandidates, generateMealPlan, inventMeals, GenerateError } from "@/lib/mealPlan/generate";
 import { derivePlanningBudget } from "@/lib/mealPlan/budget";
 import { simulatePlan } from "@/lib/mealPlan/inventory";
 import { createPlanResolver, draftToSimMeals, toSimPantry } from "@/lib/mealPlan/planCost";
@@ -100,6 +100,8 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
   const [prioritizeExpiring, setPrioritizeExpiring] = useState(true);
   const [styles, setStyles] = useState<string[]>([]);
   const [occupiedMode, setOccupiedMode] = useState<"keep" | "replace">("keep");
+  /** Let Fuudit write original recipes for slots the catalogue can't fill. */
+  const [allowInvented, setAllowInvented] = useState(true);
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
 
@@ -122,6 +124,7 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
     setPrioritizeExpiring(defaults.prioritizeExpiring);
     setStyles(defaults.nutritionStyles);
     setOccupiedMode("keep");
+    setAllowInvented(true);
     setBusy(false);
     setBusyLabel(null);
     setBudgetOn(false);
@@ -247,9 +250,27 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
         rounds = optimised.rounds;
       }
 
+      // Slots the catalogue couldn't fill: let Fuudit write original recipes for
+      // them when allowed. Clearly labelled, and a failure here never
+      // invalidates the rest of the plan.
+      let unresolved = result.unresolved;
+      if (allowInvented && unresolved.length) {
+        setBusyLabel("Writing recipes for the last slots");
+        try {
+          const written = await inventMeals({ slots: unresolved, pantry, constraints });
+          if (written.length) {
+            const filled = new Set(written.map((m) => m.slotId));
+            finalMeals = [...finalMeals, ...written];
+            unresolved = unresolved.filter((s) => !filled.has(s.slotId));
+          }
+        } catch {
+          // keep the valid plan; the user can retry per slot in the review sheet
+        }
+      }
+
       onGenerated({
         meals: finalMeals,
-        unresolved: result.unresolved,
+        unresolved,
         kept: keptSlots,
         budget: planningBudget,
         optimiseRounds: rounds,
@@ -355,6 +376,9 @@ const GenerateMealPlanSheet = ({ open, onOpenChange, weekDays, entries, onGenera
               </Chip>
               <Chip active={prioritizeExpiring} onClick={() => setPrioritizeExpiring((v) => !v)}>
                 Rescue expiring food
+              </Chip>
+              <Chip active={allowInvented} onClick={() => setAllowInvented((v) => !v)}>
+                Let Fuudit write recipes
               </Chip>
               {NUTRITION_OPTIONS.map((s) => (
                 <Chip key={s.value} active={styles.includes(s.value)} onClick={() => toggleStyle(s.value)}>

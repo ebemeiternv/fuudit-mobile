@@ -36,7 +36,7 @@ import {
   toLocalIsoDate,
 } from "@/lib/dates";
 import { parsePlanningDefaults } from "@/lib/planningDefaults";
-import { fetchCandidates, generateMealPlan, GenerateError } from "@/lib/mealPlan/generate";
+import { fetchCandidates, generateMealPlan, inventMeals, GenerateError } from "@/lib/mealPlan/generate";
 import type { DraftMeal, DraftPlan, PlanSlot } from "@/lib/mealPlan/draft";
 import type { Database } from "@/integrations/supabase/types";
 import type { MealPlanEntryWithRecipe } from "@/repositories/mealPlan";
@@ -150,6 +150,37 @@ const MealPlanScreen = () => {
         title: "Couldn't regenerate",
         description:
           err instanceof GenerateError ? err.message : "Please try again in a moment.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  /** Ask Fuudit to write an original recipe for one slot. */
+  const inventSlot = async (slot: PlanSlot): Promise<DraftMeal | null> => {
+    if (!userId) return null;
+    try {
+      const defaults = parsePlanningDefaults(
+        (profile as { planning_defaults?: unknown } | null | undefined)?.planning_defaults,
+      );
+      const written = await inventMeals({
+        slots: [slot],
+        pantry,
+        constraints: {
+          servings: profile?.household_size ?? 1,
+          diets: profile?.dietary_preferences ?? [],
+          allergies: profile?.allergies ?? [],
+          maxCookingMinutes: defaults.maxCookingMinutes,
+          prioritizePantry: defaults.prioritizePantry,
+          prioritizeExpiring: defaults.prioritizeExpiring,
+          nutritionStyles: defaults.nutritionStyles,
+        },
+      });
+      return written[0] ?? null;
+    } catch (err) {
+      toast({
+        title: "Couldn't write a recipe",
+        description: err instanceof GenerateError ? err.message : "Please try again in a moment.",
         variant: "destructive",
       });
       return null;
@@ -405,6 +436,7 @@ const MealPlanScreen = () => {
         onClose={() => setDraft(null)}
         onDraftChange={setDraft}
         onRegenerateSlot={regenerateSlot}
+        onInventSlot={inventSlot}
         onAccepted={() => setGroceryPromptOpen(true)}
       />
 

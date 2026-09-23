@@ -8,7 +8,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Clock, Loader2, RefreshCw, Trash2, Leaf, Timer, Users, Wallet } from "lucide-react";
+import { Clock, Loader2, RefreshCw, Trash2, Leaf, Timer, Users, Wallet, ChefHat, Sprout } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useAddToMealPlan } from "@/hooks/queries/useMealPlan";
@@ -25,6 +25,8 @@ type Props = {
   onDraftChange: (draft: DraftPlan) => void;
   /** Regenerate a single slot; resolves to the replacement meal or null. */
   onRegenerateSlot: (slot: PlanSlot, excludeIds: number[]) => Promise<DraftMeal | null>;
+  /** Ask Fuudit to write an original recipe for a slot the catalogue can't fill. */
+  onInventSlot: (slot: PlanSlot) => Promise<DraftMeal | null>;
   /** Called after a successful accept with how many meals were saved. */
   onAccepted: (count: number) => void;
 };
@@ -42,6 +44,7 @@ const DraftReviewSheet = ({
   onClose,
   onDraftChange,
   onRegenerateSlot,
+  onInventSlot,
   onAccepted,
 }: Props) => {
   const { user } = useAuth();
@@ -101,7 +104,9 @@ const DraftReviewSheet = ({
     if (busySlot) return;
     setBusySlot(slot.slotId);
     try {
-      const excludeIds = draft.meals.map((m) => m.spoonId);
+      const excludeIds = draft.meals
+        .map((m) => m.spoonId)
+        .filter((id): id is number => id != null);
       const replacement = await onRegenerateSlot(slot, excludeIds);
       if (replacement) {
         onDraftChange({
@@ -121,6 +126,29 @@ const DraftReviewSheet = ({
     }
   };
 
+  const invent = async (slot: PlanSlot) => {
+    if (busySlot) return;
+    setBusySlot(slot.slotId);
+    try {
+      const written = await onInventSlot(slot);
+      if (written) {
+        onDraftChange({
+          ...draft,
+          meals: [...draft.meals.filter((m) => m.slotId !== slot.slotId), written],
+          unresolved: draft.unresolved.filter((s) => s.slotId !== slot.slotId),
+        });
+      } else {
+        toast({
+          title: "Couldn't write a recipe",
+          description: "Try again, or plan this meal manually.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setBusySlot(null);
+    }
+  };
+
   const accept = async () => {
     if (accepting || !draft.meals.length) return;
     setAccepting(true);
@@ -132,7 +160,24 @@ const DraftReviewSheet = ({
           // The existing save path: full recipe detail is fetched and cached
           // before the meal-plan entry is created — no incomplete records.
           await addToPlan.mutateAsync({
-            payload: { kind: "spoon", spoonId: meal.spoonId, hint: { title: meal.title, image: meal.image } },
+            payload:
+              meal.kind === "ai" && meal.aiRecipe
+                ? {
+                    kind: "ai",
+                    recipe: {
+                      title: meal.aiRecipe.title,
+                      servings: meal.aiRecipe.servings,
+                      readyMinutes: meal.aiRecipe.readyMinutes,
+                      summary: meal.aiRecipe.summary,
+                      ingredients: meal.aiRecipe.ingredients,
+                      steps: meal.aiRecipe.steps,
+                    },
+                  }
+                : {
+                    kind: "spoon",
+                    spoonId: meal.spoonId!,
+                    hint: { title: meal.title, image: meal.image },
+                  },
             date: meal.date,
             mealType: meal.mealType,
             servings: meal.servings,
@@ -286,9 +331,16 @@ const DraftReviewSheet = ({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--app-muted))]">
-                      {SLOT_LABEL[meal.mealType] ?? meal.mealType}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[hsl(var(--app-muted))]">
+                        {SLOT_LABEL[meal.mealType] ?? meal.mealType}
+                      </p>
+                      {meal.kind === "ai" && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[hsl(var(--app-primary-soft))] text-[hsl(var(--app-primary))]">
+                          <ChefHat className="h-2.5 w-2.5" aria-hidden="true" /> Written by Fuudit
+                        </span>
+                      )}
+                    </div>
                     <p className="font-semibold text-sm text-[hsl(var(--app-foreground))] line-clamp-2 leading-snug">
                       {meal.title}
                     </p>
@@ -315,6 +367,17 @@ const DraftReviewSheet = ({
                     {cost && budget && (
                       <p className="mt-1 text-[11px] text-[hsl(var(--app-muted))] leading-relaxed">
                         {mealReasons(cost.sim, meal.slotId, budget.currency).join(" · ")}
+                      </p>
+                    )}
+                    {meal.why && (
+                      <p className="mt-1 text-[11px] italic text-[hsl(var(--app-foreground))] leading-relaxed">
+                        {meal.why}
+                      </p>
+                    )}
+                    {meal.twist && (
+                      <p className="mt-1 inline-flex items-start gap-1 text-[11px] text-[hsl(var(--app-primary))] leading-relaxed">
+                        <Sprout className="h-3 w-3 mt-0.5 shrink-0" aria-hidden="true" />
+                        <span>{meal.twist}</span>
                       </p>
                     )}
                   </div>
@@ -370,7 +433,7 @@ const DraftReviewSheet = ({
                       {Number(slot.date.slice(8, 10))}
                     </p>
                     <p className="text-xs text-[hsl(var(--app-muted))]">
-                      No safe recipe found — retry or plan it manually.
+                      No safe recipe found — retry, let Fuudit write one, or plan it manually.
                     </p>
                   </div>
                   <button
@@ -385,6 +448,15 @@ const DraftReviewSheet = ({
                     ) : (
                       <RefreshCw className="h-4 w-4" />
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Let Fuudit write a ${SLOT_LABEL[slot.mealType]} recipe`}
+                    disabled={busySlot !== null || accepting}
+                    onClick={() => invent(slot)}
+                    className="h-11 w-11 rounded-full bg-[hsl(var(--app-primary))] text-white grid place-items-center active:scale-95 transition-transform disabled:opacity-40 no-tap-highlight"
+                  >
+                    <ChefHat className="h-4 w-4" />
                   </button>
                 </div>
               ))}

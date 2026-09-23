@@ -1,3 +1,13 @@
+## AI personalisation in the meal planner (2026-09-23)
+
+Three additions to generated plans:
+- Per-meal reason ("why"): the planner writes one short personal sentence per chosen recipe, grounded in the deterministic pantry/expiry/time signals.
+- Twist suggestions: an optional swap or addition using pantry items, shown under the meal in the draft review.
+- Fuudit-written recipes: new edge function `meal-plan-invent` writes complete structured recipes (metric amounts + steps) for slots the catalogue cannot fill. They are a separate labelled kind (`kind: "ai"`, `spoonId: null`), stored on accept under `recipes.source = 'fuudit_ai'` with a fresh uuid `source_id` — never a fake Spoonacular id and never overwriting cached catalogue recipes. Allergies are re-validated in code on the client before a written recipe enters the draft.
+
+Migration: recipes insert/update policies widened to `source IN ('spoonacular','fuudit_ai')`.
+Files: supabase/functions/meal-plan-invent/index.ts (new), supabase/functions/meal-plan-generate/index.ts, src/lib/mealPlan/{draft,generate,optimize,planCost}.ts, src/repositories/recipes.ts, src/hooks/queries/useMealPlan.ts, src/components/app/mealplan/{GenerateMealPlanSheet,DraftReviewSheet}.tsx, src/pages/app/{MealPlanScreen,RecipeDetailScreen}.tsx.
+
 # Fuudit Changelog
 
 ## Budget-aware meal planning — Phase 4: running inventory + budget-aware optimisation
